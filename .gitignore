@@ -1,0 +1,13 @@
+# Local environment
+.venv/
+__pycache__/
+*.pyc
+
+# Downloaded references and datasets
+1709.00029v2.pdf
+data/
+
+# Generated training artifacts
+Project/outputs/
+*.pt
+*.pth
