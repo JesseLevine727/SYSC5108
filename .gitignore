@@ -8,6 +8,4 @@ __pycache__/
 data/
 
 # Generated training artifacts
-Project/outputs/
-*.pt
 *.pth
