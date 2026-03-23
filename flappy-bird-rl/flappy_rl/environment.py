@@ -75,7 +75,7 @@ class FlappyBirdEnv:
 
     @property
     def observation_size(self) -> int:
-        return 4
+        return 6
 
     @property
     def action_size(self) -> int:
@@ -92,6 +92,7 @@ class FlappyBirdEnv:
         self.pipes = [
             Pipe(x=self.screen_width + 80.0, gap_y=self.screen_height / 2.0),
             Pipe(x=self.screen_width + 80.0 + self.pipe_spacing, gap_y=self._sample_gap_y()),
+            Pipe(x=self.screen_width + 80.0 + (2 * self.pipe_spacing), gap_y=self._sample_gap_y()),
         ]
         return self._observation(), self._info()
 
@@ -186,6 +187,28 @@ class FlappyBirdEnv:
         self._font = None
         self._pygame_ready = False
 
+    def clone_state(self) -> dict[str, object]:
+        return {
+            "random_state": self.random.getstate(),
+            "bird_y": self.bird_y,
+            "velocity": self.velocity,
+            "score": self.score,
+            "steps": self.steps,
+            "pipes": [(pipe.x, pipe.gap_y, pipe.passed) for pipe in self.pipes],
+        }
+
+    def restore_state(self, snapshot: dict[str, object]) -> tuple[np.ndarray, dict[str, float | int]]:
+        self.random.setstate(snapshot["random_state"])  # type: ignore[arg-type]
+        self.bird_y = float(snapshot["bird_y"])  # type: ignore[arg-type]
+        self.velocity = float(snapshot["velocity"])  # type: ignore[arg-type]
+        self.score = int(snapshot["score"])  # type: ignore[arg-type]
+        self.steps = int(snapshot["steps"])  # type: ignore[arg-type]
+        self.pipes = [
+            Pipe(x=float(pipe_x), gap_y=float(gap_y), passed=bool(passed))
+            for pipe_x, gap_y, passed in snapshot["pipes"]  # type: ignore[misc]
+        ]
+        return self._observation(), self._info()
+
     def render_text(self, width: int = 40, height: int = 20) -> str:
         grid = [[" " for _ in range(width)] for _ in range(height)]
 
@@ -211,8 +234,26 @@ class FlappyBirdEnv:
         return self.random.uniform(self.min_gap_y, self.max_gap_y)
 
     def _next_pipe(self) -> Pipe:
+        return self._upcoming_pipes()[0]
+
+    def _upcoming_pipes(self) -> list[Pipe]:
         candidates = [pipe for pipe in self.pipes if (pipe.x + self.pipe_width) >= self.bird_x]
-        return min(candidates, key=lambda pipe: pipe.x, default=self.pipes[0])
+        if not candidates:
+            return sorted(self.pipes, key=lambda pipe: pipe.x)
+        return sorted(candidates, key=lambda pipe: pipe.x)
+
+    def _primary_and_secondary_pipe(self) -> tuple[Pipe, Pipe]:
+        upcoming = self._upcoming_pipes()
+        primary = upcoming[0]
+        if len(upcoming) >= 2:
+            return primary, upcoming[1]
+
+        synthetic_secondary = Pipe(
+            x=primary.x + self.pipe_spacing,
+            gap_y=primary.gap_y,
+            passed=False,
+        )
+        return primary, synthetic_secondary
 
     def _recycle_pipes(self) -> None:
         farthest_x = max(pipe.x for pipe in self.pipes)
@@ -243,20 +284,22 @@ class FlappyBirdEnv:
         return False
 
     def _observation(self) -> np.ndarray:
-        next_pipe = self._next_pipe()
+        next_pipe, second_pipe = self._primary_and_secondary_pipe()
         obs = np.array(
             [
                 self.bird_y / self.floor_y,
                 np.clip(self.velocity / self.max_velocity, -1.0, 1.0),
                 np.clip((next_pipe.x - self.bird_x) / self.screen_width, -1.0, 1.0),
                 np.clip((next_pipe.gap_y - self.bird_y) / self.floor_y, -1.0, 1.0),
+                np.clip((second_pipe.x - self.bird_x) / self.screen_width, -1.0, 1.0),
+                np.clip((second_pipe.gap_y - self.bird_y) / self.floor_y, -1.0, 1.0),
             ],
             dtype=np.float32,
         )
         return obs
 
     def _info(self) -> dict[str, float | int]:
-        next_pipe = self._next_pipe()
+        next_pipe, second_pipe = self._primary_and_secondary_pipe()
         return {
             "score": self.score,
             "steps": self.steps,
@@ -264,6 +307,8 @@ class FlappyBirdEnv:
             "velocity": self.velocity,
             "next_pipe_x": next_pipe.x,
             "next_gap_y": next_pipe.gap_y,
+            "second_pipe_x": second_pipe.x,
+            "second_gap_y": second_pipe.gap_y,
         }
 
     def _ensure_pygame(self) -> None:

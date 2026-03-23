@@ -9,3 +9,6 @@ data/
 
 # Generated training artifacts
 *.pth
+
+# Archived Flappy Bird workspace
+SLides/_archive_flappy_rl_*/
