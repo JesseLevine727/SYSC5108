@@ -1,0 +1,529 @@
+\documentclass[11pt]{report}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\pgfplotsset{compat=1.18}
+\sisetup{detect-all,round-mode=places,round-precision=2}
+
+\definecolor{earthgreen}{HTML}{2F6B52}
+\definecolor{earthgold}{HTML}{D59B42}
+\definecolor{earthblue}{HTML}{2E5EAA}
+\definecolor{earthred}{HTML}{B34D3E}
+\definecolor{earthteal}{HTML}{2F8F9D}
+\definecolor{eartholive}{HTML}{7A8F3D}
+\definecolor{softgrid}{HTML}{D9E1E5}
+
+\definecolor{resnet18scratch}{HTML}{3B7EA1}
+\definecolor{resnet18pre}{HTML}{58A4B0}
+\definecolor{resnet50scratch}{HTML}{B85C38}
+\definecolor{resnet50pre}{HTML}{D99962}
+\definecolor{vitscratch}{HTML}{556B2F}
+\definecolor{vitpre}{HTML}{95B46A}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=earthblue,
+    citecolor=earthgreen,
+    urlcolor=earthblue
+}
+
+\newcommand{\ProjectTitle}{EuroSAT Land-Use Classification with CNNs and Vision Transformers}
+\newcommand{\AuthorName}{Jesse Levine}
+\newcommand{\StudentID}{101185127}
+\newcommand{\CourseName}{SYSC 5108}
+
+\newcommand{\BestModel}{ResNet50 with ImageNet pretraining}
+\newcommand{\BestAcc}{98.67}
+\newcommand{\BestMacroFOne}{98.62}
+\newcommand{\BestLoss}{0.0458}
+\newcommand{\EuroSATPaperAcc}{98.57}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+    \centering
+    \vspace*{4.3cm}
+    {\Huge\bfseries \ProjectTitle\par}
+    \vspace{0.35cm}
+    {\Large\itshape \CourseName\par}
+    \vspace{2.2cm}
+    {\Large \AuthorName\ (\StudentID)\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+This project studies satellite land-use classification on the EuroSAT RGB dataset using three image classifiers: ResNet18, ResNet50, and ViT-Small. Each backbone was trained both from scratch and from ImageNet-pretrained weights under the same deterministic \(70/15/15\) train/validation/test split. The experiments focus on three questions: how CNNs compare with a vision transformer on a modest remote-sensing dataset, how much transfer learning helps, and how model size relates to accuracy and runtime. The saved results show a clear and consistent effect from pretraining. \BestModel{} was the strongest configuration, reaching \BestAcc{}\% test accuracy, \BestMacroFOne{}\% macro F1, and a test loss of \BestLoss. The pretrained ViT-Small was close behind at \(98.54\%\) test accuracy, while the from-scratch ViT-Small was the weakest run at \(90.40\%\). Overall, the experiments indicate that transfer learning is the dominant factor in this project, and that a pretrained CNN remains the most reliable option for this EuroSAT setting.
+
+\chapter*{Table of Acronyms}
+\addcontentsline{toc}{chapter}{Table of Acronyms}
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+    CNN & Convolutional Neural Network \\
+    RGB & Red, Green, Blue image channels \\
+    GPU & Graphics Processing Unit \\
+    ViT & Vision Transformer \\
+    F1 & Harmonic mean of precision and recall \\
+\end{tabularx}
+
+\chapter*{Table of Math Notations}
+\addcontentsline{toc}{chapter}{Table of Math Notations}
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+    \(x\) & Input RGB satellite image patch. \\
+    \(y\) & Ground-truth land-use label. \\
+    \(\hat{y}\) & Predicted class-probability vector. \\
+    \(f_{\theta}(x)\) & Model with parameters \(\theta\). \\
+    \(\mathcal{L}_{\mathrm{CE}}\) & Cross-entropy loss used for training. \\
+\end{tabularx}
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+Satellite imagery is a practical source of information for land-use mapping, agricultural monitoring, environmental assessment, and urban planning. These applications benefit from automated classification systems because manual inspection does not scale to large image archives. Deep learning is a natural candidate for this problem because it can learn discriminative spatial features directly from image patches instead of depending on handcrafted descriptors.
+
+This report focuses on the EuroSAT RGB dataset, a balanced benchmark of \(27{,}000\) Sentinel-2 image patches across ten land-use classes \cite{helber2019}. The project investigates three related questions. First, how do CNN baselines compare against a vision transformer on the same task? Second, how much does ImageNet pretraining improve performance? Third, is a larger model always worth its extra compute cost on this dataset?
+
+The objective is not to claim a new state of the art, but to produce a clear end-to-end experimental study with reproducible training, validation, and test results. The final outcome is a compact comparison across six runs together with conclusions about convergence speed, class-level behavior, and the effect of transfer learning.
+
+\chapter{Background}
+\section{Remote-Sensing Image Classification}
+EuroSAT was introduced as a benchmark for land-use and land-cover classification using Sentinel-2 imagery \cite{helber2019}. The dataset provides ten balanced classes and reports strong CNN baselines, including an overall accuracy of \(98.57\%\) in the original paper. That published number gives a useful reference point for this course project, although the split protocol and implementation details differ, so only broad comparisons are appropriate.
+
+\section{Selected Deep Learning Techniques}
+Residual networks are widely used visual backbones because skip connections make deeper models easier to optimize \cite{he2016}. In this project, ResNet18 serves as a lightweight CNN baseline and ResNet50 acts as the higher-capacity CNN.
+
+Vision Transformers adapt the transformer architecture from sequence modeling \cite{vaswani2017} to image classification by converting an image into a sequence of patches \cite{dosovitskiy2021}. Their strength is global token mixing, but their data efficiency is often weaker than strong CNNs when training from scratch. This makes ViT-Small an informative comparison point for a moderate-sized remote-sensing dataset such as EuroSAT.
+
+All pretrained runs start from ImageNet weights \cite{deng2009}. Transfer learning is especially relevant here because EuroSAT is much smaller than large-scale natural-image corpora, so a pretrained backbone may converge faster and generalize better than a randomly initialized network.
+
+\section{Architectural Details of the Chosen Models}
+The three backbones differ not only in parameter count, but in how they process spatial structure. Both ResNet models begin with a \(7 \times 7\) convolution with stride 2, followed by a \(3 \times 3\) max-pooling layer. After this stem, they stack four residual stages and finish with global average pooling plus a linear classifier adapted to ten EuroSAT classes.
+
+ResNet18 uses the standard \([2,2,2,2]\) stage layout with \texttt{BasicBlock} residual units and a final \(512 \rightarrow 10\) classification head. ResNet50 keeps the same four-stage pattern but expands it to \([3,4,6,3]\) \texttt{Bottleneck} blocks, producing a \(2048 \rightarrow 10\) output layer. This deeper bottleneck design increases representational capacity, but it also raises optimization difficulty when the model is trained from scratch on a relatively small dataset.
+
+The ViT-Small model is instantiated as \texttt{vit\_small\_patch16\_224}. In this project, the EuroSAT images remain \(64 \times 64\), so a patch size of 16 produces only \(4 \times 4 = 16\) image patches. These tokens are projected into a 384-dimensional embedding space, prepended with one class token, and processed by 12 transformer encoder blocks with 6 attention heads and an MLP ratio of 4.0. The final classifier is a \(384 \rightarrow 10\) linear layer. The small number of patches makes the transformer computationally manageable here, but it also means that each token represents a fairly large spatial region of the original image.
+
+\begin{table}[h]
+    \centering
+    \caption{Concrete architecture details of the three backbones used in code.}
+    \begin{tabular}{l l l l}
+        \toprule
+        Model & Main stem or tokenizer & Core depth & Task-specific head \\
+        \midrule
+        ResNet18 & \(7 \times 7\) conv + max-pool & \(2,2,2,2\) BasicBlocks & \(512 \rightarrow 10\) \\
+        ResNet50 & \(7 \times 7\) conv + max-pool & \(3,4,6,3\) Bottlenecks & \(2048 \rightarrow 10\) \\
+        ViT-Small & \(16 \times 16\) patch embedding & 12 transformer blocks, 6 heads & \(384 \rightarrow 10\) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Why These Models Were Chosen}
+The selected models cover two complementary design families and a meaningful range of parameter counts. ResNet18 is small and efficient, ResNet50 is deeper and more expressive, and ViT-Small has a parameter budget similar to ResNet50 while relying on a different inductive bias. This combination makes it possible to separate three effects: architecture family, model capacity, and pretraining.
+
+\chapter{System Description}
+\section{Dataset and Split}
+The experiments use the RGB version of EuroSAT with ten classes and \(64 \times 64\) inputs \cite{helber2019}. A deterministic stratified split assigns \(70\%\) of the images to training, \(15\%\) to validation, and \(15\%\) to testing. Because EuroSAT is balanced, each class contributes \(1{,}890\) training images, \(405\) validation images, and \(405\) test images.
+
+\begin{table}[h]
+    \centering
+    \caption{EuroSAT RGB class distribution under the project split.}
+    \begin{tabular}{lrrrr}
+        \toprule
+        Class & Train & Validation & Test & Total \\
+        \midrule
+        AnnualCrop & 1890 & 405 & 405 & 2700 \\
+        Forest & 1890 & 405 & 405 & 2700 \\
+        HerbaceousVegetation & 1890 & 405 & 405 & 2700 \\
+        Highway & 1890 & 405 & 405 & 2700 \\
+        Industrial & 1890 & 405 & 405 & 2700 \\
+        Pasture & 1890 & 405 & 405 & 2700 \\
+        PermanentCrop & 1890 & 405 & 405 & 2700 \\
+        Residential & 1890 & 405 & 405 & 2700 \\
+        River & 1890 & 405 & 405 & 2700 \\
+        SeaLake & 1890 & 405 & 405 & 2700 \\
+        \midrule
+        Total & 18900 & 4050 & 4050 & 27000 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Preprocessing and Training}
+All models use the same image normalization statistics and the same data augmentation policy: random horizontal flips, random vertical flips, and random rotations up to \(180^\circ\). The optimization setup is also fixed across runs: AdamW \cite{loshchilov2019}, a learning rate of \(3 \times 10^{-4}\), weight decay of \(10^{-4}\), a batch size of \(256\), and \(40\) epochs.
+
+The training objective is standard multi-class cross-entropy:
+\[
+\mathcal{L}_{\mathrm{CE}} = -\sum_{c=1}^{C} y_c \log \hat{y}_c.
+\]
+Model selection is based on the highest validation accuracy, and the corresponding checkpoint is evaluated once on the held-out test set. For all six runs, the final classification layer was replaced so that each backbone predicts the ten EuroSAT classes. This keeps the feature extractor architecture intact while aligning the output space to the project task.
+
+\begin{table}[h]
+    \centering
+    \caption{Shared training configuration for all six runs.}
+    \begin{tabular}{ll}
+        \toprule
+        Setting & Value \\
+        \midrule
+        Dataset & EuroSAT RGB \\
+        Input size & \(64 \times 64\) \\
+        Train/val/test split & \(70/15/15\) stratified \\
+        Epochs & 40 \\
+        Batch size & 256 \\
+        Optimizer & AdamW \\
+        Scheduler & Cosine annealing \\
+        Loss function & Cross-entropy \\
+        Device & RTX 5080 GPU \\
+        Metrics & Accuracy, macro F1, loss, confusion matrix \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{System Pipeline}
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[
+        scale=0.72,
+        transform shape,
+        node distance=1.4cm,
+        every node/.style={font=\small, align=center},
+        stage/.style={draw, rounded corners=5pt, minimum width=2.8cm, minimum height=1.1cm},
+        arrow/.style={-{Latex[length=3mm]}, thick}
+    ]
+        \node[stage, fill=earthblue!10] (dataset) {EuroSAT RGB\\images};
+        \node[stage, fill=earthgold!15, right=of dataset] (prep) {Resize, normalize,\\augmentation};
+        \node[stage, fill=earthgreen!12, right=of prep] (model) {ResNet18 / ResNet50 /\\ViT-Small};
+        \node[stage, fill=earthteal!14, right=of model] (train) {Train for 40 epochs\\and save best checkpoint};
+        \node[stage, fill=eartholive!18, right=of train] (eval) {Validation, test metrics,\\and error analysis};
+        \draw[arrow] (dataset) -- (prep);
+        \draw[arrow] (prep) -- (model);
+        \draw[arrow] (model) -- (train);
+        \draw[arrow] (train) -- (eval);
+    \end{tikzpicture}
+    \caption{End-to-end pipeline used in the project.}
+\end{figure}
+
+\chapter{Numerical Results}
+\section{Overall Comparison}
+Table~\ref{tab:overall-results} summarizes the six completed training runs. The strongest overall configuration was \BestModel{}, which slightly exceeds the \(98.57\%\) EuroSAT benchmark reported in the dataset paper \cite{helber2019}. That said, the comparison should be interpreted cautiously because the exact split and implementation are not identical.
+
+\begin{table}[h]
+    \centering
+    \caption{Overall comparison across the six completed runs.}
+    \label{tab:overall-results}
+    \small
+    \begin{tabular}{lrrrrr}
+        \toprule
+        Run & Params (M) & Test Acc. (\%) & Macro F1 (\%) & Test Loss & Train Time (s) \\
+        \midrule
+        ResNet18 Scratch & 11.18 & 95.75 & 95.62 & 0.1362 & 34.52 \\
+        ResNet18 Pretrained & 11.18 & 98.42 & 98.36 & 0.0516 & 34.65 \\
+        ResNet50 Scratch & 23.53 & 93.16 & 92.91 & 0.2202 & 76.02 \\
+        ResNet50 Pretrained & 23.53 & 98.67 & 98.62 & 0.0458 & 75.29 \\
+        ViT-Small Scratch & 21.60 & 90.40 & 90.08 & 0.3038 & 58.17 \\
+        ViT-Small Pretrained & 21.60 & 98.54 & 98.48 & 0.0520 & 57.54 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Two trends are immediate. First, every pretrained model outperformed its from-scratch counterpart by a large margin. Second, the from-scratch ViT-Small was the least data-efficient model in the study, while the pretrained ViT-Small nearly matched the best CNN.
+
+\section{Training Dynamics}
+\begin{figure}[p]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=\textwidth,
+            height=0.42\textheight,
+            xlabel={Epoch},
+            ylabel={Validation accuracy (\%)},
+            xmin=1, xmax=40,
+            ymin=50, ymax=100,
+            grid=both,
+            major grid style={softgrid},
+            legend style={font=\small, at={(0.5,-0.23)}, anchor=north, legend columns=3},
+            tick label style={font=\small},
+            label style={font=\small}
+        ]
+            \addplot[thick, color=resnet18scratch] table[x=epoch, y=val_accuracy_pct, col sep=comma] {data/history_resnet18_eurosat_40ep.csv};
+            \addlegendentry{ResNet18 scratch}
+
+            \addplot[thick, color=resnet18pre] table[x=epoch, y=val_accuracy_pct, col sep=comma] {data/history_resnet18_eurosat_40ep_pretrained.csv};
+            \addlegendentry{ResNet18 pretrained}
+
+            \addplot[thick, color=resnet50scratch] table[x=epoch, y=val_accuracy_pct, col sep=comma] {data/history_resnet50_eurosat_40ep_bs256.csv};
+            \addlegendentry{ResNet50 scratch}
+
+            \addplot[thick, color=resnet50pre] table[x=epoch, y=val_accuracy_pct, col sep=comma] {data/history_resnet50_eurosat_40ep_pretrained_bs256.csv};
+            \addlegendentry{ResNet50 pretrained}
+
+            \addplot[thick, color=vitscratch] table[x=epoch, y=val_accuracy_pct, col sep=comma] {data/history_vit_small_eurosat_40ep.csv};
+            \addlegendentry{ViT-Small scratch}
+
+            \addplot[thick, color=vitpre] table[x=epoch, y=val_accuracy_pct, col sep=comma] {data/history_vit_small_eurosat_40ep_pretrained.csv};
+            \addlegendentry{ViT-Small pretrained}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Validation accuracy over training epochs for all six runs.}
+    \label{fig:val-curves}
+\end{figure}
+
+Figure~\ref{fig:val-curves} shows that pretraining changes convergence behavior immediately. The pretrained ResNet50 reached at least \(95\%\) validation accuracy in the first epoch, the pretrained ViT-Small reached it by epoch 3, and the pretrained ResNet18 reached it by epoch 4. In contrast, none of the from-scratch models except ResNet18 ever crossed \(95\%\), and the from-scratch ViT-Small never reached \(90\%\) validation accuracy within 40 epochs.
+
+\section{Accuracy, Capacity, and Transfer Learning}
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=\textwidth,
+            height=0.33\textheight,
+            ybar,
+            bar width=8pt,
+            ymin=88, ymax=100,
+            ylabel={Score (\%)},
+            symbolic x coords={R18-S,R18-P,R50-S,R50-P,ViT-S,ViT-P},
+            xtick=data,
+            xticklabels={R18-S,R18-P,R50-S,R50-P,ViT-S,ViT-P},
+            xticklabel style={rotate=20, anchor=east},
+            legend style={font=\small, at={(0.5,1.02)}, anchor=south, legend columns=2},
+            grid=major,
+            major grid style={softgrid},
+            tick label style={font=\small},
+            label style={font=\small}
+        ]
+            \addplot[fill=earthblue!60, draw=earthblue] coordinates {
+                (R18-S,95.75) (R18-P,98.42) (R50-S,93.16) (R50-P,98.67) (ViT-S,90.40) (ViT-P,98.54)
+            };
+            \addlegendentry{Test accuracy}
+
+            \addplot[fill=earthgold!70, draw=earthgold] coordinates {
+                (R18-S,95.62) (R18-P,98.36) (R50-S,92.91) (R50-P,98.62) (ViT-S,90.08) (ViT-P,98.48)
+            };
+            \addlegendentry{Macro F1}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Test accuracy and macro F1 for each run. Tick labels use the abbreviations ResNet18 (R18), ResNet50 (R50), and ViT-Small (ViT), with S for scratch and P for pretrained.}
+    \label{fig:overall-bars}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=0.9\textwidth,
+            height=0.34\textheight,
+            xlabel={Parameter count (millions)},
+            ylabel={Test accuracy (\%)},
+            xmin=10, xmax=24.5,
+            ymin=89, ymax=99,
+            grid=both,
+            major grid style={softgrid},
+            legend style={font=\small, at={(0.5,-0.2)}, anchor=north, legend columns=2},
+            tick label style={font=\small},
+            label style={font=\small}
+        ]
+            \addplot[only marks, mark=square*, mark size=2.8pt, color=earthblue] coordinates {(11.18,95.75) (23.53,93.16)};
+            \addlegendentry{CNN scratch}
+
+            \addplot[only marks, mark=square*, mark size=2.8pt, color=earthgold] coordinates {(11.18,98.42) (23.53,98.67)};
+            \addlegendentry{CNN pretrained}
+
+            \addplot[only marks, mark=triangle*, mark size=3pt, color=earthgreen] coordinates {(21.60,90.40)};
+            \addlegendentry{ViT scratch}
+
+            \addplot[only marks, mark=triangle*, mark size=3pt, color=earthred] coordinates {(21.60,98.54)};
+            \addlegendentry{ViT pretrained}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Model size versus test accuracy. The figure highlights that pretraining matters more than parameter count alone.}
+    \label{fig:params-vs-acc}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=0.82\textwidth,
+            height=0.3\textheight,
+            ybar,
+            bar width=12pt,
+            ymin=0, ymax=9,
+            ylabel={Accuracy gain (percentage points)},
+            symbolic x coords={ResNet18,ResNet50,ViT-Small},
+            xtick=data,
+            grid=major,
+            major grid style={softgrid},
+            tick label style={font=\small},
+            label style={font=\small}
+        ]
+            \addplot[fill=earthgreen!60, draw=earthgreen] coordinates {
+                (ResNet18,2.67) (ResNet50,5.51) (ViT-Small,8.15)
+            };
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Test-accuracy improvement obtained from ImageNet pretraining.}
+    \label{fig:pretraining-gain}
+\end{figure}
+
+The parameter-count view in Figure~\ref{fig:params-vs-acc} shows that larger models were not automatically better when trained from scratch: ResNet50 scratch was worse than ResNet18 scratch, and ViT-Small scratch was worst overall despite having almost as many parameters as ResNet50. Figure~\ref{fig:pretraining-gain} makes the more important effect explicit. The largest gain from pretraining occurred for ViT-Small, which improved by \(8.15\) percentage points.
+
+\section{Class-Level Behavior}
+\begin{table}[h]
+    \centering
+    \caption{Hardest and easiest classes by per-class F1 score.}
+    \label{tab:class-extremes}
+    \begin{tabular}{lrrrr}
+        \toprule
+        Run & Hardest class & F1 (\%) & Easiest class & F1 (\%) \\
+        \midrule
+        ResNet18 Scratch & PermanentCrop & 91.13 & SeaLake & 99.11 \\
+        ResNet18 Pretrained & PermanentCrop & 96.39 & SeaLake & 99.67 \\
+        ResNet50 Scratch & PermanentCrop & 86.83 & SeaLake & 99.00 \\
+        ResNet50 Pretrained & AnnualCrop & 97.14 & SeaLake & 99.78 \\
+        ViT-Small Scratch & Highway & 78.84 & Forest & 96.16 \\
+        ViT-Small Pretrained & PermanentCrop & 96.61 & SeaLake & 99.78 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+SeaLake was the easiest class in five of the six runs, while PermanentCrop was usually the hardest. This pattern is plausible because water bodies have strong visual structure, whereas PermanentCrop overlaps with AnnualCrop and HerbaceousVegetation more often.
+
+\begin{figure}[p]
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            width=0.82\textwidth,
+            height=0.5\textheight,
+            view={0}{90},
+            colorbar,
+            colormap/viridis,
+            xlabel={Predicted class},
+            ylabel={True class},
+            xmin=0.5, xmax=10.5,
+            ymin=0.5, ymax=10.5,
+            xtick={1,...,10},
+            ytick={1,...,10},
+            xticklabels={Annual,Forest,Herbaceous,Highway,Industrial,Pasture,Permanent,Residential,River,SeaLake},
+            yticklabels={Annual,Forest,Herbaceous,Highway,Industrial,Pasture,Permanent,Residential,River,SeaLake},
+            x tick label style={rotate=45, anchor=east, font=\scriptsize},
+            y tick label style={font=\scriptsize},
+            y dir=reverse,
+            point meta min=0,
+            point meta max=405,
+            tick label style={font=\small},
+            label style={font=\small}
+        ]
+            \addplot[
+                scatter,
+                only marks,
+                mark=square*,
+                mark size=8pt,
+                scatter src=explicit,
+                point meta=explicit,
+                scatter/use mapped color={draw=mapped color, fill=mapped color}
+            ] table[x=predicted_index, y=actual_index, meta=count, col sep=comma] {data/confusion_best_model.csv};
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Confusion matrix for the best model, ResNet50 with ImageNet pretraining.}
+    \label{fig:confusion}
+\end{figure}
+
+The confusion matrix in Figure~\ref{fig:confusion} is strongly diagonal, which matches the near-\(99\%\) accuracy of the best runs. The remaining errors are concentrated in semantically similar classes. For example, the largest off-diagonal counts for the best model include PermanentCrop \(\rightarrow\) AnnualCrop and Pasture \(\rightarrow\) AnnualCrop, each with eight mistakes.
+
+\section{Attention-Map Batch Summary}
+The project also saved a small batch of ViT-Small attention visualizations. Since these figures already exist as report-ready raster outputs, it is more useful to show representative examples directly. Figure~\ref{fig:attention-montage} includes two correct and two incorrect cases from the saved batch.
+
+\begin{figure}[p]
+    \centering
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../outputs/vit_attention_batch/Highway_1700_correct_attention.png}
+        \caption*{\footnotesize Correct: Highway \(\rightarrow\) Highway (99.998\%)}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../outputs/vit_attention_batch/River_2248_correct_attention.png}
+        \caption*{\footnotesize Correct: River \(\rightarrow\) River (99.95\%)}
+    \end{minipage}
+
+    \vspace{0.9em}
+
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../outputs/vit_attention_batch/PermanentCrop_2411_incorrect_attention.png}
+        \caption*{\footnotesize Incorrect: PermanentCrop \(\rightarrow\) HerbaceousVegetation (99.99\%)}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{../outputs/vit_attention_batch/Residential_480_incorrect_attention.png}
+        \caption*{\footnotesize Incorrect: Residential \(\rightarrow\) Industrial (76.74\%)}
+    \end{minipage}
+    \caption{Saved ViT-Small attention visualizations from the test set. The bottom row shows that the model can still produce confident but wrong predictions when classes share similar texture or spatial layout.}
+    \label{fig:attention-montage}
+\end{figure}
+
+The attention montage makes two points clearer than the previous table-only summary. First, the correct examples show sharply localized focus on the dominant land-use pattern in the patch, which is consistent with the high-confidence predictions. Second, the incorrect cases illustrate why some EuroSAT classes remain difficult: PermanentCrop and HerbaceousVegetation share fine-grained vegetation texture, while Residential and Industrial can overlap in roof pattern and road layout. The repeated PermanentCrop \(\rightarrow\) HerbaceousVegetation confusion appears both here and in the full confusion matrices, so it is a dataset-level ambiguity rather than a one-off error.
+
+\chapter{Conclusion}
+This project produced a complete comparison of six EuroSAT RGB classifiers under a fixed and reproducible training pipeline. The main conclusion is that transfer learning mattered more than architecture choice or raw parameter count. All three pretrained models reached at least \(98.4\%\) test accuracy, while their from-scratch counterparts lagged behind by \(2.67\) to \(8.15\) percentage points.
+
+Among the tested configurations, \BestModel{} was the strongest final model at \BestAcc{}\% test accuracy and \BestMacroFOne{}\% macro F1. The pretrained ViT-Small was nearly as strong, which shows that transformer-based models can perform very well on EuroSAT once pretrained weights are available. However, the from-scratch ViT-Small result also shows that the transformer is the least data-efficient option in this specific setup.
+
+The experimental evidence therefore supports a practical recommendation: for a small-to-medium remote-sensing dataset with limited project time, a pretrained CNN is the safest first choice, and a pretrained ViT becomes attractive when interpretability or architecture diversity is important. Future work could extend this report with multispectral EuroSAT experiments, robustness tests, or a larger transformer family.
+
+\begin{thebibliography}{9}
+\addcontentsline{toc}{chapter}{References}
+
+\bibitem{helber2019}
+P. Helber, B. Bischke, A. Dengel, and D. Borth,
+``EuroSAT: A Novel Dataset and Deep Learning Benchmark for Land Use and Land Cover Classification,''
+\emph{IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing}, vol. 12, no. 7, pp. 2217--2226, 2019.
+
+\bibitem{he2016}
+K. He, X. Zhang, S. Ren, and J. Sun,
+``Deep Residual Learning for Image Recognition,''
+in \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 2016, pp. 770--778.
+
+\bibitem{vaswani2017}
+A. Vaswani et al.,
+``Attention Is All You Need,''
+in \emph{Advances in Neural Information Processing Systems}, 2017, pp. 5998--6008.
+
+\bibitem{dosovitskiy2021}
+A. Dosovitskiy et al.,
+``An Image Is Worth 16x16 Words: Transformers for Image Recognition at Scale,''
+in \emph{International Conference on Learning Representations}, 2021.
+
+\bibitem{deng2009}
+J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei,
+``ImageNet: A Large-Scale Hierarchical Image Database,''
+in \emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 2009, pp. 248--255.
+
+\bibitem{loshchilov2019}
+I. Loshchilov and F. Hutter,
+``Decoupled Weight Decay Regularization,''
+in \emph{International Conference on Learning Representations}, 2019.
+
+\end{thebibliography}
+
+\end{document}
