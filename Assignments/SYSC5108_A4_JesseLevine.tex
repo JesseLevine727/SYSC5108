@@ -1,0 +1,968 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsfonts, bm}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{setspace}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+% --- Title Page ---
+\begin{document}
+\begin{titlepage}
+    \begin{center}
+        \vspace*{2cm}
+        \Huge\textbf{Assignment 4} \\
+        \vspace{0.25cm}
+        \Large\textit{SYSC5108} \\
+        \vspace{2cm}
+        \Large Jesse Levine (101185127) \\
+        \vfill
+    \end{center}
+\end{titlepage}
+
+\newpage
+\pagenumbering{arabic}
+
+\section*{1}
+
+Given:
+\[
+\bm{x}_t=
+\begin{bmatrix}
+1\\
+0.5
+\end{bmatrix},
+\qquad
+\bm{h}_{t-1}=
+\begin{bmatrix}
+0.05\\
+0.2\\
+0.15
+\end{bmatrix},
+\qquad
+\bm{b}_h=
+\begin{bmatrix}
+0.1\\
+0.1\\
+0.1
+\end{bmatrix},
+\qquad
+\bm{b}_y=
+\begin{bmatrix}
+0.1\\
+0.1
+\end{bmatrix}
+\]
+
+and the weight matrices:
+\[
+W_{xh}=
+\begin{bmatrix}
+-0.07 & 0.05\\
+-0.04 & 0.10\\
+-0.05 & -0.05
+\end{bmatrix},
+\quad
+W_{hh}=
+\begin{bmatrix}
+-0.22 & -0.10 & 0.05\\
+-0.04 & -0.09 & -0.06\\
+-0.09 & 0 & -0.08
+\end{bmatrix},
+\quad
+W_{hy}=
+\begin{bmatrix}
+0.06 & -0.01 & -0.18\\
+-0.06 & 0.13 & 0.14
+\end{bmatrix}.
+\]
+
+\begin{enumerate}[label=\alph*)]
+\item Hidden-layer pre-activation:
+\[
+\bm{z}_h = W_{xh}\bm{x}_t + W_{hh}\bm{h}_{t-1} + \bm{b}_h.
+\]
+
+First,
+\[
+W_{xh}\bm{x}_t=
+\begin{bmatrix}
+-0.07(1)+0.05(0.5)\\
+-0.04(1)+0.10(0.5)\\
+-0.05(1)-0.05(0.5)
+\end{bmatrix}
+=
+\begin{bmatrix}
+-0.045\\
+0.010\\
+-0.075
+\end{bmatrix},
+\]
+and
+\[
+W_{hh}\bm{h}_{t-1}=
+\begin{bmatrix}
+-0.22(0.05)-0.10(0.2)+0.05(0.15)\\
+-0.04(0.05)-0.09(0.2)-0.06(0.15)\\
+-0.09(0.05)+0(0.2)-0.08(0.15)
+\end{bmatrix}
+=
+\begin{bmatrix}
+-0.0235\\
+-0.0290\\
+-0.0165
+\end{bmatrix}.
+\]
+
+Therefore,
+\[
+\bm{z}_h=
+\begin{bmatrix}
+0.0315\\
+0.0810\\
+0.0085
+\end{bmatrix}.
+\]
+
+Since the hidden units use ReLU,
+\[
+\bm{h}_t=\operatorname{ReLU}(\bm{z}_h)=
+\begin{bmatrix}
+0.0315\\
+0.0810\\
+0.0085
+\end{bmatrix}.
+\]
+
+Now compute the output pre-activation:
+\[
+\bm{z}_y=W_{hy}\bm{h}_t+\bm{b}_y
+=
+\begin{bmatrix}
+0.06 & -0.01 & -0.18\\
+-0.06 & 0.13 & 0.14
+\end{bmatrix}
+\begin{bmatrix}
+0.0315\\
+0.0810\\
+0.0085
+\end{bmatrix}
++
+\begin{bmatrix}
+0.1\\
+0.1
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.09955\\
+0.10983
+\end{bmatrix}.
+\]
+
+Again using ReLU at the output,
+\[
+\bm{y}_t=\operatorname{ReLU}(\bm{z}_y)=
+\begin{bmatrix}
+0.09955\\
+0.10983
+\end{bmatrix}.
+\]
+
+Therefore the answer is:
+\[
+\boxed{
+\bm{y}_t=
+\begin{bmatrix}
+0.09955\\
+0.10983
+\end{bmatrix}}
+\]
+
+\item Let the target be
+\[
+\bm{t}=
+\begin{bmatrix}
+0\\
+1
+\end{bmatrix}.
+\]
+
+Using squared error and the same convention as earlier assignments,
+\[
+\delta_k=(y_k-t_k)\operatorname{ReLU}'(z_k).
+\]
+
+Since all hidden and output pre-activations are positive, every ReLU derivative is \(1\).
+Thus the output-layer deltas are
+\[
+\delta_6 = 0.09955-0 = 0.09955,
+\qquad
+\delta_7 = 0.10983-1 = -0.89017.
+\]
+
+For the hidden layer,
+\[
+\bm{\delta}_h = (W_{hy}^{\top}\bm{\delta}_y)\odot \operatorname{ReLU}'(\bm{z}_h).
+\]
+So,
+\[
+W_{hy}^{\top}\bm{\delta}_y=
+\begin{bmatrix}
+0.06 & -0.06\\
+-0.01 & 0.13\\
+-0.18 & 0.14
+\end{bmatrix}
+\begin{bmatrix}
+0.09955\\
+-0.89017
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.0593832\\
+-0.1167176\\
+-0.1425428
+\end{bmatrix}.
+\]
+
+Therefore the hidden-layer deltas are
+\[
+\delta_3=0.0593832,\qquad
+\delta_4=-0.1167176,\qquad
+\delta_5=-0.1425428.
+\]
+
+Hence the neuron deltas are
+\[
+\boxed{
+\delta_3=0.05938,\;
+\delta_4=-0.11672,\;
+\delta_5=-0.14254,\;
+\delta_6=0.09955,\;
+\delta_7=-0.89017.}
+\]
+\end{enumerate}
+
+\section*{2}
+
+From Slide 10 of Chapter 6,
+\[
+P=
+\begin{bmatrix}
+p & 1-p\\
+0 & 1
+\end{bmatrix},
+\]
+with the initial state at \(n=0\) equal to state \(0\), so
+\[
+\bm{\pi}(0)=
+\begin{bmatrix}
+1 & 0
+\end{bmatrix}.
+\]
+
+\begin{enumerate}[label=\alph*)]
+\item At time \(n\),
+\[
+\pi_0(n)=p^n,
+\qquad
+\pi_1(n)=1-p^n.
+\]
+
+\item To revisit state \(0\), the chain must stay in state \(0\) in the first step. After reaching
+state \(1\), it never returns. Therefore,
+\[
+\boxed{\Pr(\text{revisit state }0)=p.}
+\]
+
+\item For \(0 \le p < 1\),
+\[
+\bar{\pi}_0=\lim_{N\to\infty}\frac{1}{N}\sum_{n=0}^{N-1}p^n=0,
+\qquad
+\bar{\pi}_1=\lim_{N\to\infty}\frac{1}{N}\sum_{n=0}^{N-1}(1-p^n)=1.
+\]
+
+Hence,
+\[
+\boxed{\bar{\pi}_0=0,\qquad \bar{\pi}_1=1.}
+\]
+
+\item Before the message is sent successfully, the sender can only be in state \(0\). Hence
+\[
+\boxed{\Pr(\text{sender is in state }0\mid \text{message not yet sent})=1.}
+\]
+\end{enumerate}
+
+\section*{3}
+
+The transition matrix is
+\[
+P=
+\begin{bmatrix}
+p & 1-p\\
+1-p & p
+\end{bmatrix}.
+\]
+
+\begin{enumerate}[label=\alph*)]
+\item With
+\[
+Q_0=
+\begin{bmatrix}
+0.2\\
+0.8
+\end{bmatrix},
+\]
+the marginal distribution at time \(1\) is
+\[
+Q_1=PQ_0=
+\begin{bmatrix}
+p & 1-p\\
+1-p & p
+\end{bmatrix}
+\begin{bmatrix}
+0.2\\
+0.8
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.8-0.6p\\
+0.2+0.6p
+\end{bmatrix}.
+\]
+
+\item Define
+\[
+A=\frac{1}{2}
+\begin{bmatrix}
+1 & 1\\
+1 & 1
+\end{bmatrix},
+\qquad
+B=\frac{1}{2}
+\begin{bmatrix}
+1 & -1\\
+-1 & 1
+\end{bmatrix}.
+\]
+Then
+\[
+P=A+(2p-1)B.
+\]
+
+Also,
+\[
+A^2=A,\qquad B^2=B,\qquad AB=BA=0.
+\]
+
+Therefore,
+\[
+P^{(n)} = \left(A+(2p-1)B\right)^n = A+(2p-1)^nB.
+\]
+Substituting \(A\) and \(B\),
+\[
+P^{(n)}=
+\begin{bmatrix}
+\frac{1}{2}+\frac{(2p-1)^n}{2} & \frac{1}{2}-\frac{(2p-1)^n}{2}\\[4pt]
+\frac{1}{2}-\frac{(2p-1)^n}{2} & \frac{1}{2}+\frac{(2p-1)^n}{2}
+\end{bmatrix},
+\]
+which is exactly the required result.
+
+\item If \(0<p<1\), then \(|2p-1|<1\), so
+\[
+\lim_{n\to\infty}(2p-1)^n=0.
+\]
+Hence the limiting probabilities are
+\[
+\boxed{
+\lim_{n\to\infty}Q_n=
+\begin{bmatrix}
+\tfrac{1}{2}\\
+\tfrac{1}{2}
+\end{bmatrix}.}
+\]
+
+Special cases:
+\[
+p=1 \Rightarrow P=I \text{ and } Q_n=Q_0,
+\qquad
+p=0 \Rightarrow P^n \text{ oscillates and no limit exists.}
+\]
+
+\item For \(0<p<1\),
+\[
+\boxed{
+\lim_{n\to\infty}P^{(n)}=
+\begin{bmatrix}
+\tfrac{1}{2} & \tfrac{1}{2}\\
+\tfrac{1}{2} & \tfrac{1}{2}
+\end{bmatrix}.}
+\]
+
+For \(p=1\), the limit is \(I\). For \(p=0\), the limit does not exist.
+\end{enumerate}
+
+\section*{4}
+
+Let the original reward at time \(t+1\) be \(R_{t+1}\), and define a new reward
+\[
+R'_{t+1}=R_{t+1}+c.
+\]
+
+Under any policy \(\pi\),
+\[
+v'_{\pi}(s)
+=
+\mathbb{E}_{\pi}\!\left[\sum_{k=0}^{\infty}\gamma^k R'_{t+k+1}\,\middle|\,S_t=s\right]
+\]
+\[
+=
+\mathbb{E}_{\pi}\!\left[\sum_{k=0}^{\infty}\gamma^k (R_{t+k+1}+c)\,\middle|\,S_t=s\right]
+\]
+\[
+=
+\mathbb{E}_{\pi}\!\left[\sum_{k=0}^{\infty}\gamma^k R_{t+k+1}\,\middle|\,S_t=s\right]
++
+c\sum_{k=0}^{\infty}\gamma^k
+=
+v_{\pi}(s)+\frac{c}{1-\gamma},
+\]
+for \(|\gamma|<1\).
+
+Thus every state value is shifted by the same constant
+\[
+\boxed{v_c=\frac{c}{1-\gamma}.}
+\]
+
+Therefore,
+\[
+v'_{\pi}(s_1)-v'_{\pi}(s_2)
+=
+\left(v_{\pi}(s_1)+v_c\right)-\left(v_{\pi}(s_2)+v_c\right)
+=
+v_{\pi}(s_1)-v_{\pi}(s_2).
+\]
+
+So adding a constant to every reward does not change any relative ordering of states under
+any policy. Only the intervals between rewards matter for comparing policies.
+
+\section*{5}
+
+Environment given:
+\[
+\begin{array}{c c c c c}
+\toprule
+\text{State} & \text{Action} & \text{Next State} & \text{Probability} & \text{Reward}\\
+\midrule
+0 & 0 & 0 & 1 & -1\\
+0 & 1 & 1 & 1 & 1\\
+1 & 0 & 1 & 1 & 1\\
+1 & 1 & 0 & 1 & -1\\
+\bottomrule
+\end{array}
+\]
+with \(\gamma=0.1\).
+
+The greedy action is \(a=1\) in state \(0\), and \(a=0\) in state \(1\).
+
+\begin{enumerate}[label=\alph*)]
+\item For two actions, an \(\varepsilon\)-greedy policy assigns
+\[
+\Pr(\text{greedy action})=1-\varepsilon+\frac{\varepsilon}{2}=1-\frac{\varepsilon}{2}.
+\]
+Given
+\[
+\pi(1|0)=\pi(0|1)=0.6,
+\]
+we have
+\[
+1-\frac{\varepsilon}{2}=0.6
+\quad\Rightarrow\quad
+\varepsilon=0.8.
+\]
+
+\item Under the given policy,
+\[
+V(0)=0.4[-1+0.1V(0)] + 0.6[1+0.1V(1)],
+\]
+\[
+V(1)=0.6[1+0.1V(1)] + 0.4[-1+0.1V(0)].
+\]
+
+By symmetry, \(V(0)=V(1)=v\). Then
+\[
+v=0.4(-1+0.1v)+0.6(1+0.1v)=0.2+0.1v,
+\]
+so
+\[
+0.9v=0.2
+\quad\Rightarrow\quad
+v=\frac{2}{9}\approx 0.2222.
+\]
+
+Therefore,
+\[
+\boxed{V(0)=V(1)=\frac{2}{9}\approx 0.2222.}
+\]
+
+Now compute the action values:
+\[
+Q(0,0)=-1+0.1V(0)=-1+\frac{1}{45}=-\frac{44}{45}\approx -0.9778,
+\]
+\[
+Q(0,1)=1+0.1V(1)=1+\frac{1}{45}=\frac{46}{45}\approx 1.0222,
+\]
+\[
+Q(1,0)=1+0.1V(1)=\frac{46}{45}\approx 1.0222,
+\]
+\[
+Q(1,1)=-1+0.1V(0)=-\frac{44}{45}\approx -0.9778.
+\]
+
+So
+\[
+\boxed{
+Q(0,0)=-0.9778,\;
+Q(0,1)=1.0222,\;
+Q(1,0)=1.0222,\;
+Q(1,1)=-0.9778.}
+\]
+
+\item The optimal Bellman equations are
+\[
+V^*(0)=\max\{-1+0.1V^*(0),\; 1+0.1V^*(1)\},
+\]
+\[
+V^*(1)=\max\{1+0.1V^*(1),\; -1+0.1V^*(0)\}.
+\]
+
+Clearly the optimal actions are
+\[
+\boxed{\pi^*(0)=1,\qquad \pi^*(1)=0.}
+\]
+
+Under this policy,
+\[
+V^*(1)=1+0.1V^*(1)
+\quad\Rightarrow\quad
+V^*(1)=\frac{1}{0.9}=\frac{10}{9},
+\]
+and
+\[
+V^*(0)=1+0.1V^*(1)=1+\frac{1}{9}=\frac{10}{9}.
+\]
+
+Thus
+\[
+\boxed{V^*(0)=V^*(1)=\frac{10}{9}\approx 1.1111.}
+\]
+
+\item Using the given random numbers and the policy in part (a):
+
+Trajectory starting from \(s_0=0\):
+\[
+0 \xrightarrow[a=0]{-1} 0 \xrightarrow[a=1]{1} 1 \xrightarrow[a=0]{1} 1.
+\]
+This uses \(0.94, 0.27, 0.30\).
+
+Trajectory starting from \(s_0=1\):
+\[
+1 \xrightarrow[a=0]{1} 1 \xrightarrow[a=1]{-1} 0 \xrightarrow[a=1]{1} 1.
+\]
+This uses \(0.18, 0.75, 0.35\).
+
+The returns are
+\[
+G_0^{(1)}=-1+0.1(1)+0.1^2(1)=-0.89,\qquad
+G_1^{(1)}=1+0.1(1)=1.1,\qquad
+G_2^{(1)}=1,
+\]
+\[
+G_0^{(2)}=1+0.1(-1)+0.1^2(1)=0.91,\qquad
+G_1^{(2)}=-1+0.1(1)=-0.9,\qquad
+G_2^{(2)}=1.
+\]
+
+Using every-visit incremental Monte Carlo with \(\alpha=0.6\) and initial estimates \(0\):
+\[
+\boxed{V(0)\approx 0.77856,\qquad V(1)\approx -0.22560.}
+\]
+
+The action-value estimates are
+\[
+\boxed{
+Q(0,0)=-0.534,\;
+Q(0,1)=0.864,\;
+Q(1,0)=0.786,\;
+Q(1,1)=-0.540.}
+\]
+
+\item For off-policy TD control, use Q-learning:
+\[
+Q(s,a)\leftarrow Q(s,a)+\alpha\left[r+\gamma\max_{a'}Q(s',a')-Q(s,a)\right].
+\]
+
+Starting from all zeros, and treating the trajectory endpoint at \(t=3\) as terminal for the
+last update, the final action values are
+\[
+\boxed{
+Q(0,0)=-0.600,\;
+Q(0,1)=0.840,\;
+Q(1,0)=0.876,\;
+Q(1,1)=-0.564.}
+\]
+
+\item For on-policy TD control, use SARSA:
+\[
+Q(s,a)\leftarrow Q(s,a)+\alpha\left[r+\gamma Q(s',a')-Q(s,a)\right].
+\]
+
+Start with \(Q(s,a)=0\) for all pairs and the initial policy
+\[
+\pi(1|0)=\pi(0|1)=0.5.
+\]
+
+Using the same random sequence from the start:
+\[
+0.94,\;0.27,\;0.30,\;0.18,\;0.75,
+\]
+the trajectory is
+\[
+0 \xrightarrow[a=0]{-1} 0 \xrightarrow[a=1]{1} 1 \xrightarrow[a=0]{1} 1
+\xrightarrow[a=0]{1} 1 \xrightarrow[a=1]{-1} 0.
+\]
+
+Applying SARSA step-by-step gives
+\[
+\boxed{
+Q(0,0)=-0.600,\;
+Q(0,1)=0.600,\;
+Q(1,0)=0.840,\;
+Q(1,1)=-0.600.}
+\]
+\end{enumerate}
+
+\section*{6}
+
+The five 2D samples are
+\[
+(2,-2),\quad (0,4),\quad (-3,-1),\quad (3,-3),\quad (-2,2).
+\]
+
+Since the sample mean is
+\[
+\bm{\mu}=
+\begin{bmatrix}
+0\\
+0
+\end{bmatrix},
+\]
+the centered data matrix is the same as the original one:
+\[
+X=
+\begin{bmatrix}
+2 & 0 & -3 & 3 & -2\\
+-2 & 4 & -1 & -3 & 2
+\end{bmatrix}.
+\]
+
+The covariance matrix is
+\[
+\Sigma=\frac{1}{5}XX^{\top}
+=
+\begin{bmatrix}
+5.2 & -2.8\\
+-2.8 & 6.8
+\end{bmatrix}.
+\]
+
+Its eigenvalues are
+\[
+\lambda_1\approx 8.9120,\qquad \lambda_2\approx 3.0880.
+\]
+
+Therefore the one-dimensional PCA direction is the eigenvector corresponding to \(\lambda_1\):
+\[
+\boxed{
+\bm{u}_1=
+\begin{bmatrix}
+0.6022\\
+-0.7983
+\end{bmatrix}.}
+\]
+
+\begin{enumerate}[label=\alph*)]
+\item One-dimensional PCA:
+\[
+\boxed{\bm{u}_1=\begin{bmatrix}0.6022\\-0.7983\end{bmatrix}.}
+\]
+
+\item The encoded 1D coordinates are
+\[
+z_i=\bm{u}_1^{\top}\bm{x}_i.
+\]
+Hence
+\[
+\boxed{
+z=
+\begin{bmatrix}
+2.8011 & -3.1934 & -1.0082 & 4.2016 & -2.8011
+\end{bmatrix}.}
+\]
+
+\item The reconstructed points are
+\[
+\hat{\bm{x}}_i=\bm{\mu}+\bm{u}_1 z_i.
+\]
+Therefore the reconstructed samples are approximately
+\[
+\boxed{
+\begin{aligned}
+\hat{\bm{x}}_1&=(1.6868,\,-2.2362),\\
+\hat{\bm{x}}_2&=(-1.9230,\,2.5494),\\
+\hat{\bm{x}}_3&=(-0.6072,\,0.8049),\\
+\hat{\bm{x}}_4&=(2.5302,\,-3.3544),\\
+\hat{\bm{x}}_5&=(-1.6868,\,2.2362).
+\end{aligned}}
+\]
+
+\item The percentage of variance explained is
+\[
+\frac{\lambda_1}{\lambda_1+\lambda_2}
+=
+\frac{8.9120}{8.9120+3.0880}
+\approx 0.7427.
+\]
+Therefore,
+\[
+\boxed{\text{explained variance ratio} \approx 74.27\%.}
+\]
+\end{enumerate}
+
+\section*{7}
+
+We have the data
+\[
+x=[1,2,3,9,10],
+\]
+and the initial parameters
+\[
+\pi_1=0.6,\qquad \pi_2=0.4,\qquad \mu_1=2.0,\qquad \mu_2=9.5,
+\]
+with \(\sigma_1^2=\sigma_2^2=1\).
+
+For one EM iteration:
+
+\textbf{E-step.} The responsibilities are
+\[
+\gamma_{i1}
+=
+\frac{\pi_1 \mathcal{N}(x_i\mid \mu_1,1)}
+{\pi_1 \mathcal{N}(x_i\mid \mu_1,1)+\pi_2 \mathcal{N}(x_i\mid \mu_2,1)},
+\qquad
+\gamma_{i2}=1-\gamma_{i1}.
+\]
+
+Numerically,
+\[
+\begin{array}{c c c}
+\toprule
+x_i & \gamma_{i1} & \gamma_{i2}\\
+\midrule
+1  & 1.0000 & 0.0000\\
+2  & 1.0000 & 0.0000\\
+3  & 1.0000 & 0.0000\\
+9  & 0.0000 & 1.0000\\
+10 & 0.0000 & 1.0000\\
+\bottomrule
+\end{array}
+\]
+to four decimal places.
+
+\[
+N_1=\sum_i\gamma_{i1}\approx 3,\qquad N_2=\sum_i\gamma_{i2}\approx 2.
+\]
+
+\textbf{M-step.}
+\[
+\pi_1^{\text{new}}=\frac{N_1}{5}\approx 0.6,\qquad
+\pi_2^{\text{new}}=\frac{N_2}{5}\approx 0.4.
+\]
+
+\[
+\mu_1^{\text{new}}=\frac{\sum_i\gamma_{i1}x_i}{N_1}\approx \frac{1+2+3}{3}=2.0,
+\]
+\[
+\mu_2^{\text{new}}=\frac{\sum_i\gamma_{i2}x_i}{N_2}\approx \frac{9+10}{2}=9.5.
+\]
+
+Therefore after one EM iteration,
+\[
+\boxed{
+\pi_1^{\text{new}}\approx 0.6000,\quad
+\pi_2^{\text{new}}\approx 0.4000,\quad
+\mu_1^{\text{new}}\approx 2.0000,\quad
+\mu_2^{\text{new}}\approx 9.5000.}
+\]
+
+This means that in practice the parameters remain essentially unchanged after one step because the two
+clusters are already well separated.
+
+\section*{8}
+
+Interpret the listed joint probabilities in lexicographic order:
+\[
+P(X_0,X_1)=
+\begin{bmatrix}
+P(0,0)\\
+P(0,1)\\
+P(1,0)\\
+P(1,1)
+\end{bmatrix}
+=
+\begin{bmatrix}
+\tfrac14\\
+\tfrac12\\
+\tfrac18\\
+\tfrac18
+\end{bmatrix}.
+\]
+
+Equivalently, the joint table is
+\[
+\begin{array}{c c c}
+\toprule
+ & X_1=0 & X_1=1\\
+\midrule
+X_0=0 & \tfrac14 & \tfrac12\\
+X_0=1 & \tfrac18 & \tfrac18\\
+\bottomrule
+\end{array}
+\]
+
+\begin{enumerate}[label=\alph*)]
+\item First compute the marginals:
+\[
+P(X_1=0)=\frac14+\frac18=\frac38,\qquad
+P(X_1=1)=\frac12+\frac18=\frac58,
+\]
+\[
+P(X_0=0)=\frac14+\frac12=\frac34,\qquad
+P(X_0=1)=\frac18+\frac18=\frac14.
+\]
+
+Therefore
+\[
+P(X_0=0\mid X_1=0)=\frac{1/4}{3/8}=\frac23,\qquad
+P(X_0=1\mid X_1=0)=\frac13,
+\]
+\[
+P(X_0=0\mid X_1=1)=\frac{1/2}{5/8}=\frac45,\qquad
+P(X_0=1\mid X_1=1)=\frac15.
+\]
+
+So
+\[
+\boxed{
+P(X_0\mid X_1=0)=
+\begin{bmatrix}
+\tfrac23\\[2pt]
+\tfrac13
+\end{bmatrix},
+\qquad
+P(X_0\mid X_1=1)=
+\begin{bmatrix}
+\tfrac45\\[2pt]
+\tfrac15
+\end{bmatrix}.}
+\]
+
+Similarly,
+\[
+P(X_1=0\mid X_0=0)=\frac{1/4}{3/4}=\frac13,\qquad
+P(X_1=1\mid X_0=0)=\frac23,
+\]
+\[
+P(X_1=0\mid X_0=1)=\frac{1/8}{1/4}=\frac12,\qquad
+P(X_1=1\mid X_0=1)=\frac12.
+\]
+
+Hence
+\[
+\boxed{
+P(X_1\mid X_0=0)=
+\begin{bmatrix}
+\tfrac13\\[2pt]
+\tfrac23
+\end{bmatrix},
+\qquad
+P(X_1\mid X_0=1)=
+\begin{bmatrix}
+\tfrac12\\[2pt]
+\tfrac12
+\end{bmatrix}.}
+\]
+
+\item Use the random numbers in order.
+
+Initialization from independent uniform distributions:
+\[
+r_1=0.94 \Rightarrow X_0^{(0)}=1,\qquad
+r_2=0.27 \Rightarrow X_1^{(0)}=0.
+\]
+
+Now run Gibbs sampling for 3 iterations.
+
+\textbf{Iteration 1}
+\[
+r_3=0.30,\quad X_1^{(0)}=0
+\Rightarrow
+P(X_0=0\mid X_1=0)=\frac23
+\Rightarrow X_0^{(1)}=0.
+\]
+\[
+r_4=0.18,\quad X_0^{(1)}=0
+\Rightarrow
+P(X_1=0\mid X_0=0)=\frac13
+\Rightarrow X_1^{(1)}=0.
+\]
+
+\textbf{Iteration 2}
+\[
+r_5=0.75,\quad X_1^{(1)}=0
+\Rightarrow X_0^{(2)}=1,
+\]
+because \(0.75>\tfrac23\).
+\[
+r_6=0.35,\quad X_0^{(2)}=1
+\Rightarrow X_1^{(2)}=0,
+\]
+because \(0.35\le \tfrac12\).
+
+\textbf{Iteration 3}
+\[
+r_7=0.61,\quad X_1^{(2)}=0
+\Rightarrow X_0^{(3)}=0,
+\]
+because \(0.61\le \tfrac23\).
+\[
+r_8=0.42,\quad X_0^{(3)}=0
+\Rightarrow X_1^{(3)}=1,
+\]
+because \(0.42>\tfrac13\).
+
+So the Gibbs samples are
+\[
+\boxed{
+(X_0^{(0)},X_1^{(0)})=(1,0),\quad
+(X_0^{(1)},X_1^{(1)})=(0,0),\quad
+(X_0^{(2)},X_1^{(2)})=(1,0),\quad
+(X_0^{(3)},X_1^{(3)})=(0,1).}
+\]
+\end{enumerate}
+
+\end{document}
