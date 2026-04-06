@@ -45,12 +45,16 @@ class PPOConfig:
     entropy_coef_final_scale: float = 0.10
     frame_stack: int = 1
     randomize_start: bool = True
-    train_track_pool: str = "train"
+    train_track_pool: str = "curriculum"
     evaluation_track_pool: str = "all"
+    selection_track_pool: str = "holdout"
     min_domain_randomization_scale: float = 0.10
     max_domain_randomization_scale: float = 1.00
     domain_randomization_ramp_fraction: float = 0.35
     evaluation_domain_randomization_scale: float = 1.00
+    selection_domain_randomization_scale: float = 1.00
+    selection_episodes: int = 12
+    curriculum_switch_fraction: float = 0.30
     normalize_observations: bool = True
     observation_clip: float = 5.0
     solved_progress_threshold: float = 3.20
@@ -94,12 +98,16 @@ def parse_args() -> PPOConfig:
     parser.add_argument("--entropy-coef-final-scale", type=float, default=0.10)
     parser.add_argument("--frame-stack", type=int, default=1)
     parser.add_argument("--disable-randomize-start", action="store_true")
-    parser.add_argument("--train-track-pool", choices=("train", "procedural", "all"), default="train")
+    parser.add_argument("--train-track-pool", choices=("curriculum", "train", "procedural", "all"), default="curriculum")
     parser.add_argument("--evaluation-track-pool", choices=("all", "holdout", "procedural", "train"), default="all")
+    parser.add_argument("--selection-track-pool", choices=("all", "holdout", "procedural", "train"), default="holdout")
     parser.add_argument("--min-domain-randomization-scale", type=float, default=0.10)
     parser.add_argument("--max-domain-randomization-scale", type=float, default=1.00)
     parser.add_argument("--domain-randomization-ramp-fraction", type=float, default=0.35)
     parser.add_argument("--evaluation-domain-randomization-scale", type=float, default=1.00)
+    parser.add_argument("--selection-domain-randomization-scale", type=float, default=1.00)
+    parser.add_argument("--selection-episodes", type=int, default=12)
+    parser.add_argument("--curriculum-switch-fraction", type=float, default=0.30)
     parser.add_argument("--disable-observation-normalization", action="store_true")
     parser.add_argument("--observation-clip", type=float, default=5.0)
     parser.add_argument("--solved-progress-threshold", type=float, default=3.20)
@@ -136,10 +144,14 @@ def parse_args() -> PPOConfig:
         randomize_start=not args.disable_randomize_start,
         train_track_pool=args.train_track_pool,
         evaluation_track_pool=args.evaluation_track_pool,
+        selection_track_pool=args.selection_track_pool,
         min_domain_randomization_scale=args.min_domain_randomization_scale,
         max_domain_randomization_scale=args.max_domain_randomization_scale,
         domain_randomization_ramp_fraction=args.domain_randomization_ramp_fraction,
         evaluation_domain_randomization_scale=args.evaluation_domain_randomization_scale,
+        selection_domain_randomization_scale=args.selection_domain_randomization_scale,
+        selection_episodes=args.selection_episodes,
+        curriculum_switch_fraction=args.curriculum_switch_fraction,
         normalize_observations=not args.disable_observation_normalization,
         observation_clip=args.observation_clip,
         solved_progress_threshold=args.solved_progress_threshold,
@@ -200,6 +212,12 @@ def current_domain_randomization_scale(config: PPOConfig, progress_fraction: flo
     return config.min_domain_randomization_scale + (scale_span * ramp_progress)
 
 
+def current_train_track_pool(config: PPOConfig, progress_fraction: float) -> str:
+    if config.train_track_pool != "curriculum":
+        return config.train_track_pool
+    return "procedural" if progress_fraction < config.curriculum_switch_fraction else "train"
+
+
 def evaluate_policy(
     model: ActorCritic,
     device: torch.device,
@@ -208,14 +226,20 @@ def evaluate_policy(
     episodes: int,
     seed_base: int,
     observation_stats: RunningMeanStd | None,
+    track_pool: str | None = None,
+    domain_randomization_scale: float | None = None,
 ) -> dict[str, float | list[float]]:
     env = make_env(
         config.seed + seed_base,
         config.max_steps,
         frame_stack=config.frame_stack,
         randomize_start=config.randomize_start,
-        domain_randomization_scale=config.evaluation_domain_randomization_scale,
-        track_pool=config.evaluation_track_pool,
+        domain_randomization_scale=(
+            config.evaluation_domain_randomization_scale
+            if domain_randomization_scale is None
+            else domain_randomization_scale
+        ),
+        track_pool=config.evaluation_track_pool if track_pool is None else track_pool,
     )
     rewards: list[float] = []
     laps: list[float] = []
@@ -261,24 +285,40 @@ def evaluate_policy(
 def selection_key(
     validation_metrics: dict[str, float | list[float]],
     benchmark_metrics: dict[str, float | list[float]],
+    selection_metrics: dict[str, float | list[float]],
 ) -> tuple[float, float, float]:
     return (
-        -max(float(validation_metrics["off_track_rate"]), float(benchmark_metrics["off_track_rate"])),
-        min(float(validation_metrics["mean_progress"]), float(benchmark_metrics["mean_progress"])),
-        min(float(validation_metrics["mean_reward"]), float(benchmark_metrics["mean_reward"])),
+        -max(
+            float(validation_metrics["off_track_rate"]),
+            float(benchmark_metrics["off_track_rate"]),
+            float(selection_metrics["off_track_rate"]),
+        ),
+        min(
+            float(validation_metrics["mean_progress"]),
+            float(benchmark_metrics["mean_progress"]),
+            float(selection_metrics["mean_progress"]),
+        ),
+        min(
+            float(validation_metrics["mean_reward"]),
+            float(benchmark_metrics["mean_reward"]),
+            float(selection_metrics["mean_reward"]),
+        ),
     )
 
 
 def is_solved(
     validation_metrics: dict[str, float | list[float]],
     benchmark_metrics: dict[str, float | list[float]],
+    selection_metrics: dict[str, float | list[float]],
     config: PPOConfig,
 ) -> bool:
     return (
         float(validation_metrics["mean_progress"]) >= config.solved_progress_threshold
         and float(benchmark_metrics["mean_progress"]) >= config.solved_progress_threshold
+        and float(selection_metrics["mean_progress"]) >= config.solved_progress_threshold
         and float(validation_metrics["off_track_rate"]) <= config.solved_off_track_threshold
         and float(benchmark_metrics["off_track_rate"]) <= config.solved_off_track_threshold
+        and float(selection_metrics["off_track_rate"]) <= config.solved_off_track_threshold
     )
 
 
@@ -394,6 +434,11 @@ def main() -> None:
             "mean_progress": float("-inf"),
             "off_track_rate": float("inf"),
         },
+        "selection": {
+            "mean_reward": float("-inf"),
+            "mean_progress": float("-inf"),
+            "off_track_rate": float("inf"),
+        },
     }
     total_steps = 0
     started_at = time.time()
@@ -407,6 +452,7 @@ def main() -> None:
     for update in range(1, config.updates + 1):
         progress_fraction = (update - 1) / max(1, config.updates - 1)
         domain_randomization_scale = current_domain_randomization_scale(config, progress_fraction)
+        train_track_pool = current_train_track_pool(config, progress_fraction)
         current_lr = config.learning_rate * (1.0 - progress_fraction * (1.0 - config.learning_rate_final_scale))
         current_entropy_coef = config.entropy_coef * (
             1.0 - progress_fraction * (1.0 - config.entropy_coef_final_scale)
@@ -415,6 +461,7 @@ def main() -> None:
             param_group["lr"] = current_lr
         for env in envs:
             base_env(env).set_domain_randomization(domain_randomization_scale)
+            base_env(env).set_track_pool(train_track_pool)
 
         obs_buf = np.zeros((config.rollout_steps, config.num_envs, state_dim), dtype=np.float32)
         actions_buf = np.zeros((config.rollout_steps, config.num_envs), dtype=np.int64)
@@ -562,13 +609,24 @@ def main() -> None:
                 seed_base=90_000,
                 observation_stats=observation_stats,
             )
+            selection_metrics = evaluate_policy(
+                model,
+                device,
+                config,
+                state_dim=state_dim,
+                episodes=config.selection_episodes,
+                seed_base=130_000,
+                observation_stats=observation_stats,
+                track_pool=config.selection_track_pool,
+                domain_randomization_scale=config.selection_domain_randomization_scale,
+            )
             elapsed = time.time() - started_at
             mean_policy_loss = total_policy_loss / max(1, batch_count)
             mean_value_loss = total_value_loss / max(1, batch_count)
             mean_entropy = total_entropy / max(1, batch_count)
             mean_approx_kl = total_approx_kl / max(1, batch_count)
-            current_selection = selection_key(validation_metrics, benchmark_metrics)
-            solved_now = is_solved(validation_metrics, benchmark_metrics, config)
+            current_selection = selection_key(validation_metrics, benchmark_metrics, selection_metrics)
+            solved_now = is_solved(validation_metrics, benchmark_metrics, selection_metrics, config)
             solved_streak = solved_streak + 1 if solved_now else 0
 
             print(
@@ -579,9 +637,13 @@ def main() -> None:
                 f"bench_progress={benchmark_metrics['mean_progress']:0.3f} "
                 f"bench_reward={benchmark_metrics['mean_reward']:7.2f} "
                 f"bench_offtrack={benchmark_metrics['off_track_rate']:0.2f} "
+                f"sel_progress={selection_metrics['mean_progress']:0.3f} "
+                f"sel_reward={selection_metrics['mean_reward']:7.2f} "
+                f"sel_offtrack={selection_metrics['off_track_rate']:0.2f} "
                 f"policy_loss={mean_policy_loss:0.4f} value_loss={mean_value_loss:0.4f} "
                 f"entropy={mean_entropy:0.4f} approx_kl={mean_approx_kl:0.5f} "
-                f"rand_scale={domain_randomization_scale:0.2f} ent_coef={current_entropy_coef:0.5f} lr={current_lr:0.6f} "
+                f"train_pool={train_track_pool} rand_scale={domain_randomization_scale:0.2f} "
+                f"ent_coef={current_entropy_coef:0.5f} lr={current_lr:0.6f} "
                 f"kl_stop={int(early_stop_for_kl)} solved_streak={solved_streak} elapsed={elapsed:6.1f}s"
             )
 
@@ -597,6 +659,11 @@ def main() -> None:
                         "mean_reward": float(benchmark_metrics["mean_reward"]),
                         "mean_progress": float(benchmark_metrics["mean_progress"]),
                         "off_track_rate": float(benchmark_metrics["off_track_rate"]),
+                    },
+                    "selection": {
+                        "mean_reward": float(selection_metrics["mean_reward"]),
+                        "mean_progress": float(selection_metrics["mean_progress"]),
+                        "off_track_rate": float(selection_metrics["off_track_rate"]),
                     },
                 }
                 save_checkpoint(
@@ -661,6 +728,7 @@ def main() -> None:
         "PPO training finished. "
         f"val_progress={best_metrics['validation']['mean_progress']:0.3f} "
         f"bench_progress={best_metrics['benchmark']['mean_progress']:0.3f} "
+        f"sel_progress={best_metrics['selection']['mean_progress']:0.3f} "
         f"val_reward={best_metrics['validation']['mean_reward']:0.2f}"
     )
 

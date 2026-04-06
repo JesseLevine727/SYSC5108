@@ -29,6 +29,8 @@ class CarTrackEnv(gym.Env):
         4: "right",
         5: "accelerate_left",
         6: "accelerate_right",
+        7: "brake_left",
+        8: "brake_right",
     }
 
     def __init__(
@@ -57,11 +59,11 @@ class CarTrackEnv(gym.Env):
         self.generator_params: dict[str, float | list[tuple[float, int, float]]] = {}
 
         self.base_dt = 0.11
-        self.base_max_speed = 22.0
-        self.base_acceleration = 10.0
-        self.base_brake_deceleration = 12.0
-        self.base_drag = 0.28
-        self.base_steering_rate = 2.7
+        self.base_max_speed = 28.0
+        self.base_acceleration = 11.0
+        self.base_brake_deceleration = 14.0
+        self.base_drag = 0.24
+        self.base_steering_rate = 2.9
         self.dt = self.base_dt
         self.max_speed = self.base_max_speed
         self.acceleration = self.base_acceleration
@@ -75,13 +77,20 @@ class CarTrackEnv(gym.Env):
         self.max_sensor_noise = 0.035
         self.sensor_noise = 0.0
 
-        self.reward_progress_gain = 1.8
+        self.reward_progress_gain = 2.2
         self.reward_heading_gain = 0.10
-        self.reward_center_penalty = 0.14
-        self.reward_steer_penalty = 0.015
-        self.reward_idle_penalty = 0.035
+        self.reward_under_target_speed_penalty = 0.30
+        self.reward_overspeed_penalty = 0.26
+        self.reward_straight_throttle_bonus = 0.05
+        self.reward_time_penalty = 0.05
+        self.reward_center_penalty = 0.09
+        self.reward_steer_penalty = 0.006
+        self.reward_idle_penalty = 0.04
+        self.reward_brake_penalty = 0.006
         self.reward_off_track_penalty = 5.0
         self.lap_bonus = 2.5
+        self.target_speed_min_ratio = 0.38
+        self.target_speed_curve_gain = 0.82
 
         self.track_sample_count = 512
         self.track_points = np.zeros((self.track_sample_count, 2), dtype=np.float32)
@@ -95,7 +104,7 @@ class CarTrackEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=-1.0,
             high=1.0,
-            shape=(5 + len(self.ray_angles),),
+            shape=(9 + len(self.ray_angles),),
             dtype=np.float32,
         )
 
@@ -177,8 +186,6 @@ class CarTrackEnv(gym.Env):
             raise ValueError(f"Invalid action {action}")
 
         throttle, brake, steer = self._decode_action(action)
-        speed_norm = self.speed / self.max_speed
-
         self.speed = float(
             np.clip(
                 self.speed
@@ -189,7 +196,8 @@ class CarTrackEnv(gym.Env):
                 self.max_speed,
             )
         )
-        steer_scale = 0.30 + (0.70 * speed_norm)
+        speed_norm = self.speed / max(self.max_speed, 1e-6)
+        steer_scale = float(np.clip(1.0 - (0.55 * speed_norm), 0.35, 1.0))
         self.heading = self._wrap_angle(self.heading + (steer * self.steering_rate * self.dt * steer_scale))
         heading_vector = np.asarray([math.cos(self.heading), math.sin(self.heading)], dtype=np.float32)
         self.position = self.position + (heading_vector * self.speed * self.dt)
@@ -219,13 +227,17 @@ class CarTrackEnv(gym.Env):
         terminated = abs(lateral_error) > self.track_half_width
         truncated = self.steps >= self.max_steps
 
+        lookahead_curvature = self._lookahead_curvature_features(track_index)
         reward = self._compute_reward(
+            track_index=track_index,
             progress_distance=progress_distance,
             lateral_error=lateral_error,
             heading_error=heading_error,
             steer=steer,
             throttle=throttle,
+            brake=brake,
             terminated=terminated,
+            lookahead_curvature=lookahead_curvature,
         )
         if lap_complete:
             reward += self.lap_bonus
@@ -235,12 +247,14 @@ class CarTrackEnv(gym.Env):
             lateral_error=lateral_error,
             heading_error=heading_error,
             progress_distance=progress_distance,
+            lookahead_curvature=lookahead_curvature,
         )
         info = self._info(
             track_index=track_index,
             lateral_error=lateral_error,
             heading_error=heading_error,
             lap_complete=lap_complete,
+            lookahead_curvature=lookahead_curvature,
         )
         return observation, reward, terminated, truncated, info
 
@@ -322,9 +336,11 @@ class CarTrackEnv(gym.Env):
     def render_text(self) -> str:
         lateral_error = self._signed_lateral_error(self.position, guess_index=self.last_track_index)
         heading_error = math.degrees(self._heading_error(self.last_track_index))
+        target_speed_ratio = self._target_speed_ratio(self._lookahead_curvature_features(self.last_track_index))
         return (
             f"family={self.track_family} speed={self.speed:0.2f} laps={self.laps_completed} "
             f"progress={self.total_progress / self.track_length:0.2f} "
+            f"target_speed={target_speed_ratio * self.max_speed:0.2f} "
             f"offset={lateral_error:0.2f} heading_error_deg={heading_error:0.1f}"
         )
 
@@ -341,6 +357,9 @@ class CarTrackEnv(gym.Env):
     def set_domain_randomization(self, scale: float) -> None:
         self.domain_randomization_scale = max(0.0, min(1.5, float(scale)))
 
+    def set_track_pool(self, track_pool: str) -> None:
+        self.track_pool = track_pool
+
     def _decode_action(self, action: int) -> tuple[float, float, float]:
         if action == 0:
             return 0.0, 0.0, 0.0
@@ -356,26 +375,65 @@ class CarTrackEnv(gym.Env):
             return 1.0, 0.0, -1.0
         if action == 6:
             return 1.0, 0.0, 1.0
+        if action == 7:
+            return 0.0, 1.0, -1.0
+        if action == 8:
+            return 0.0, 1.0, 1.0
         raise ValueError(f"Invalid action {action}")
 
     def _compute_reward(
         self,
+        track_index: int,
         progress_distance: float,
         lateral_error: float,
         heading_error: float,
         steer: float,
         throttle: float,
+        brake: float,
         terminated: bool,
+        lookahead_curvature: list[float] | None = None,
     ) -> float:
         progress_norm = float(
             np.clip(progress_distance / max(self.max_speed * self.dt, 1e-6), -1.0, 1.0)
         )
-        center_penalty = self.reward_center_penalty * abs(lateral_error / self.track_half_width)
-        heading_bonus = self.reward_heading_gain * max(0.0, math.cos(heading_error))
-        steer_penalty = self.reward_steer_penalty * abs(steer) * (0.25 + (self.speed / self.max_speed))
+        center_ratio = abs(lateral_error / self.track_half_width)
+        alignment = max(0.0, math.cos(heading_error))
+        speed_norm = self.speed / max(self.max_speed, 1e-6)
+        curvature_features = (
+            self._lookahead_curvature_features(track_index) if lookahead_curvature is None else lookahead_curvature
+        )
+        curve_load = self._curve_load(curvature_features)
+        target_speed_ratio = self._target_speed_ratio(curvature_features)
+        under_target_penalty = self.reward_under_target_speed_penalty * max(
+            0.0,
+            target_speed_ratio - speed_norm,
+        ) * (0.2 + (0.8 * target_speed_ratio))
+        overspeed_penalty = self.reward_overspeed_penalty * max(
+            0.0,
+            speed_norm - target_speed_ratio,
+        ) * (0.25 + (0.75 * curve_load))
+        straight_throttle_bonus = self.reward_straight_throttle_bonus * throttle * max(
+            0.0,
+            target_speed_ratio - 0.85,
+        ) * alignment
+        center_penalty = self.reward_center_penalty * center_ratio
+        heading_bonus = self.reward_heading_gain * alignment
+        steer_penalty = self.reward_steer_penalty * abs(steer) * (0.15 + speed_norm) * (0.35 + (0.65 * (1.0 - curve_load)))
+        brake_penalty = self.reward_brake_penalty * brake * max(0.20, speed_norm) * max(0.25, 1.0 - curve_load)
         idle_penalty = self.reward_idle_penalty if self.speed < 0.75 and throttle <= 0.0 else 0.0
 
-        reward = (self.reward_progress_gain * progress_norm) + heading_bonus - center_penalty - steer_penalty - idle_penalty
+        reward = (
+            (self.reward_progress_gain * progress_norm)
+            + heading_bonus
+            + straight_throttle_bonus
+            - center_penalty
+            - steer_penalty
+            - brake_penalty
+            - idle_penalty
+            - under_target_penalty
+            - overspeed_penalty
+            - self.reward_time_penalty
+        )
         if terminated:
             reward -= self.reward_off_track_penalty
         return reward
@@ -387,6 +445,7 @@ class CarTrackEnv(gym.Env):
         lateral_error: float | None = None,
         heading_error: float | None = None,
         progress_distance: float | None = None,
+        lookahead_curvature: list[float] | None = None,
     ) -> np.ndarray:
         current_lateral_error = (
             self._signed_lateral_error(self.position, guess_index=track_index) if lateral_error is None else lateral_error
@@ -398,6 +457,8 @@ class CarTrackEnv(gym.Env):
             self._ray_distance(math.radians(relative_angle), guess_index=track_index) / self.ray_length
             for relative_angle in self.ray_angles
         ]
+        curvature_features = self._lookahead_curvature_features(track_index) if lookahead_curvature is None else lookahead_curvature
+        target_speed_ratio = self._target_speed_ratio(curvature_features)
         observation = np.asarray(
             [
                 self.speed / self.max_speed,
@@ -405,6 +466,8 @@ class CarTrackEnv(gym.Env):
                 math.sin(current_heading_error),
                 math.cos(current_heading_error),
                 float(np.clip(current_progress / max(self.max_speed * self.dt, 1e-6), -1.0, 1.0)),
+                *curvature_features,
+                target_speed_ratio,
                 *ray_distances,
             ],
             dtype=np.float32,
@@ -424,16 +487,20 @@ class CarTrackEnv(gym.Env):
         lateral_error: float | None = None,
         heading_error: float | None = None,
         lap_complete: bool,
+        lookahead_curvature: list[float] | None = None,
     ) -> dict[str, float | int | str]:
         current_lateral_error = (
             self._signed_lateral_error(self.position, guess_index=track_index) if lateral_error is None else lateral_error
         )
         current_heading_error = self._heading_error(track_index) if heading_error is None else heading_error
+        curvature_features = self._lookahead_curvature_features(track_index) if lookahead_curvature is None else lookahead_curvature
+        target_speed_ratio = self._target_speed_ratio(curvature_features)
         return {
             "steps": self.steps,
             "laps": self.laps_completed,
             "progress": float(self.total_progress / self.track_length),
             "speed": float(self.speed),
+            "target_speed": float(target_speed_ratio * self.max_speed),
             "lateral_error": float(current_lateral_error),
             "heading_error_deg": float(math.degrees(current_heading_error)),
             "lap_complete": int(lap_complete),
@@ -657,8 +724,8 @@ class CarTrackEnv(gym.Env):
         if self.track_pool == "holdout":
             return ["handcrafted"]
         if self.track_pool == "all":
-            return ["radial", "ellipse", "peanut", "stadium", "handcrafted"]
-        return ["radial", "ellipse", "peanut", "stadium", "handcrafted"]
+            return ["radial", "ellipse", "peanut", "stadium", "handcrafted", "handcrafted"]
+        return ["radial", "ellipse", "peanut", "stadium", "handcrafted", "handcrafted", "handcrafted"]
 
     def _handcrafted_templates(self) -> dict[str, list[tuple[float, float]]]:
         train_templates = {
@@ -684,6 +751,55 @@ class CarTrackEnv(gym.Env):
                 (-85.0, 190.0),
                 (-205.0, 95.0),
             ],
+            "handcrafted_train_teardrop": [
+                (-210.0, -30.0),
+                (-155.0, -175.0),
+                (-20.0, -215.0),
+                (115.0, -175.0),
+                (210.0, -55.0),
+                (220.0, 70.0),
+                (120.0, 185.0),
+                (-20.0, 215.0),
+                (-165.0, 155.0),
+                (-225.0, 50.0),
+            ],
+            "handcrafted_train_trioval": [
+                (-205.0, -95.0),
+                (-95.0, -205.0),
+                (65.0, -195.0),
+                (195.0, -105.0),
+                (230.0, 35.0),
+                (145.0, 180.0),
+                (-10.0, 220.0),
+                (-155.0, 165.0),
+                (-225.0, 45.0),
+            ],
+            "handcrafted_train_snail": [
+                (-225.0, -55.0),
+                (-165.0, -180.0),
+                (-35.0, -220.0),
+                (115.0, -185.0),
+                (220.0, -80.0),
+                (210.0, 60.0),
+                (125.0, 165.0),
+                (20.0, 120.0),
+                (-45.0, 25.0),
+                (-120.0, 95.0),
+                (-225.0, 60.0),
+            ],
+            "handcrafted_train_double_apex": [
+                (-220.0, -120.0),
+                (-120.0, -210.0),
+                (30.0, -225.0),
+                (180.0, -165.0),
+                (230.0, -20.0),
+                (170.0, 85.0),
+                (55.0, 130.0),
+                (-25.0, 45.0),
+                (-105.0, 105.0),
+                (-205.0, 155.0),
+                (-240.0, 20.0),
+            ],
         }
         holdout_templates = {
             "handcrafted_holdout_serpentine": [
@@ -707,6 +823,33 @@ class CarTrackEnv(gym.Env):
                 (110.0, 140.0),
                 (5.0, 210.0),
                 (-110.0, 150.0),
+            ],
+            "handcrafted_holdout_hourglass": [
+                (-225.0, -105.0),
+                (-125.0, -210.0),
+                (15.0, -165.0),
+                (140.0, -220.0),
+                (235.0, -95.0),
+                (150.0, 5.0),
+                (235.0, 125.0),
+                (130.0, 225.0),
+                (-10.0, 165.0),
+                (-130.0, 225.0),
+                (-240.0, 105.0),
+                (-145.0, -5.0),
+            ],
+            "handcrafted_holdout_hook": [
+                (-235.0, -40.0),
+                (-170.0, -180.0),
+                (-35.0, -230.0),
+                (135.0, -185.0),
+                (235.0, -55.0),
+                (210.0, 110.0),
+                (105.0, 205.0),
+                (-20.0, 165.0),
+                (-75.0, 65.0),
+                (-145.0, 110.0),
+                (-235.0, 65.0),
             ],
         }
         if self.track_pool == "holdout":
@@ -754,6 +897,43 @@ class CarTrackEnv(gym.Env):
             if lateral_error > self.track_half_width:
                 return float(distance)
         return self.ray_length
+
+    def _lookahead_curvature_features(self, track_index: int) -> list[float]:
+        current_heading = math.atan2(
+            float(self.track_tangents[track_index][1]),
+            float(self.track_tangents[track_index][0]),
+        )
+        lookahead_offsets = (10, 22, 40)
+        features: list[float] = []
+        for offset in lookahead_offsets:
+            future_index = (track_index + offset) % self.track_sample_count
+            future_heading = math.atan2(
+                float(self.track_tangents[future_index][1]),
+                float(self.track_tangents[future_index][0]),
+            )
+            heading_delta = self._wrap_angle(future_heading - current_heading)
+            features.append(float(np.clip(heading_delta / math.pi, -1.0, 1.0)))
+        return features
+
+    def _curve_load(self, lookahead_curvature: list[float]) -> float:
+        magnitudes = [abs(value) for value in lookahead_curvature]
+        weighted_mean = (
+            (0.45 * magnitudes[0]) +
+            (0.35 * magnitudes[1]) +
+            (0.20 * magnitudes[2])
+        )
+        peak = max(magnitudes)
+        return float(np.clip((0.55 * peak) + (0.45 * weighted_mean), 0.0, 1.0))
+
+    def _target_speed_ratio(self, lookahead_curvature: list[float]) -> float:
+        curve_load = self._curve_load(lookahead_curvature)
+        return float(
+            np.clip(
+                1.0 - (curve_load * self.target_speed_curve_gain),
+                self.target_speed_min_ratio,
+                1.0,
+            )
+        )
 
     def _car_polygon(self) -> list[tuple[int, int]]:
         heading = np.asarray([math.cos(self.heading), math.sin(self.heading)], dtype=np.float32)

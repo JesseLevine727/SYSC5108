@@ -201,6 +201,37 @@ def plot_transfer_benchmark(results: dict[str, object]) -> None:
     (PLOTS_DIR / "run5_transfer_benchmark.svg").write_text(svg_footer(lines))
 
 
+def plot_run13_transfer_benchmark(results: dict[str, object]) -> None:
+    suites = results["run13_transfer"]  # type: ignore[index]
+    width, height = 980, 560
+    chart_left, chart_top, chart_width, chart_height = 90, 100, 820, 320
+    y_max = 5.0
+
+    lines = svg_header(width, height)
+    add_text(lines, 40, 48, "Run 13 From-Scratch Racing Benchmark", size=28, weight="700")
+    add_text(lines, 40, 74, "Curriculum-trained racing dynamics checkpoint evaluated on procedural, mixed, and unseen holdout tracks", size=15, fill=COLORS["slate"])
+    add_axes(lines, chart_left, chart_top, chart_width, chart_height, y_max=y_max, y_ticks=5)
+
+    bar_slot = chart_width / len(suites)
+    colors = [COLORS["blue"], COLORS["green"], COLORS["orange"], COLORS["red"]]
+    for index, (suite, color) in enumerate(zip(suites, colors)):
+        center_x = chart_left + (index + 0.5) * bar_slot
+        value = float(suite["progress"])
+        reward = float(suite["reward"])
+        off_track = float(suite["off_track_rate"])
+        top_y = scale_y(value, chart_top, chart_height, y_max)
+        add_rect(lines, center_x - 38, top_y, 76, chart_top + chart_height - top_y, fill=color)
+        add_text(lines, center_x, top_y - 8, f"{value:.2f}", size=11, anchor="middle", fill=color)
+        add_multiline_text(lines, center_x, chart_top + chart_height + 28, str(suite["suite"]), size=12)
+        add_text(lines, center_x, 470, f"reward {reward:.0f}", size=11, anchor="middle", fill=COLORS["slate"])
+        add_text(lines, center_x, 488, f"off-track {off_track:.2f}", size=11, anchor="middle", fill=COLORS["slate"])
+
+    add_line(lines, chart_left, scale_y(3.0, chart_top, chart_height, y_max), chart_left + chart_width, scale_y(3.0, chart_top, chart_height, y_max), stroke=COLORS["gray"], stroke_width=2, dash="6 4")
+    add_text(lines, 905, scale_y(3.0, chart_top, chart_height, y_max) - 6, "3.0 progress", size=11, fill=COLORS["slate"], anchor="end")
+    add_text(lines, 90, 528, "Run 13 is the first checkpoint that combines fast racing dynamics with zero off-track failures across all evaluated holdout suites.", size=13, fill=COLORS["slate"])
+    (PLOTS_DIR / "run13_transfer_benchmark.svg").write_text(svg_footer(lines))
+
+
 def plot_generalization_benchmark(results: dict[str, object]) -> None:
     suites = results["run4_benchmark"]  # type: ignore[index]
     width, height = 960, 560
@@ -235,6 +266,7 @@ def main() -> None:
     plot_steps_vs_progress(results)
     plot_generalization_benchmark(results)
     plot_transfer_benchmark(results)
+    plot_run13_transfer_benchmark(results)
     print("Generated:", *(str(path.name) for path in sorted(PLOTS_DIR.glob("*.svg"))))
 
 

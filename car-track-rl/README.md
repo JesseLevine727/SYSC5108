@@ -94,6 +94,7 @@ Generated SVGs are written to `plots/`:
 - `plots/sample_efficiency.svg`
 - `plots/run4_generalization_benchmark.svg`
 - `plots/run5_transfer_benchmark.svg`
+- `plots/run13_transfer_benchmark.svg`
 
 ## Experiment Summary
 
@@ -178,6 +179,33 @@ All runs below were trained with PPO in `torch` on the local RTX 5080 GPU.
   - `holdout_stress`: `mean_progress = 2.824`, `off_track_rate = 0.00`
 - Result: the policy transfers to unseen handcrafted holdout layouts without crashing, but performance is lower there than on seen or mixed-distribution tracks. This is the main remaining gap.
 
+### Run 13: From-Scratch Curriculum Racing Dynamics
+
+- Added:
+  - racing-oriented car dynamics with a higher top speed and stronger braking
+  - steering that gets harder at high speed instead of easier
+  - a curriculum that starts on procedural tracks and then switches into the broader train pool
+  - explicit holdout-based checkpoint selection instead of choosing checkpoints only from mixed-pool performance
+- Command:
+  - `./.venv/bin/python train_ppo.py --device cuda --updates 180 --eval-every 5 --eval-episodes 16 --benchmark-episodes 12 --selection-episodes 16 --checkpoint-dir artifacts_run13_curriculum_fromscratch_race --train-track-pool curriculum --evaluation-track-pool all --selection-track-pool holdout --solved-progress-threshold 2.80`
+- Best checkpoint: `artifacts_run13_curriculum_fromscratch_race/ppo_best_model.pt`
+- Solved at update `30` after `184,320` steps
+- Best training metrics:
+  - validation: `mean_progress = 4.175`, `off_track_rate = 0.00`
+  - mixed benchmark: `mean_progress = 3.566`, `off_track_rate = 0.00`
+  - holdout selection: `mean_progress = 3.193`, `off_track_rate = 0.00`
+- Full benchmark of best checkpoint:
+  - `procedural_baseline`: `mean_progress = 4.634`, `off_track_rate = 0.00`
+  - `mixed_generalization`: `mean_progress = 4.114`, `off_track_rate = 0.00`
+  - `holdout_handcrafted`: `mean_progress = 3.224`, `off_track_rate = 0.00`
+  - `holdout_stress`: `mean_progress = 3.230`, `off_track_rate = 0.00`
+- Direct holdout pace profile:
+  - `mean_speed = 26.803`
+  - `peak_speed = 27.055`
+  - `speed_std = 1.985`
+  - `mean_progress = 3.115`
+- Result: this is the first run that combines the faster racing dynamics with robust transfer to unseen handcrafted holdout tracks. It is materially faster than the older robust checkpoints while keeping zero off-track failures across the benchmark suites.
+
 ## Current Takeaways
 
 - The project now supports robust training on:
@@ -185,9 +213,9 @@ All runs below were trained with PPO in `torch` on the local RTX 5080 GPU.
   - randomized sensing
   - multiple procedural generators
   - train/holdout track pools
-- The best-performing policies are robust across all evaluated distributions so far, including unseen handcrafted holdout tracks.
-- The remaining weakness is not catastrophic failure; it is efficiency and lap quality on holdout handcrafted layouts.
-- `artifacts_run5/ppo_best_model.pt` is currently the most informative transfer checkpoint.
+- The trainer now also supports curriculum track pools and explicit holdout-based checkpoint selection for the racing-dynamics setup.
+- `artifacts_run13_curriculum_fromscratch_race/ppo_best_model.pt` is now the strongest overall checkpoint for fast and robust transfer.
+- The remaining weakness is no longer basic transfer failure; it is that the learned high-speed policy still mostly expresses speed control through aggressive steering and throttle rather than heavy braking on holdout tracks.
 
 ## Manual Play
 

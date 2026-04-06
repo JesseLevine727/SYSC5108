@@ -54,6 +54,17 @@
       "final_progress": 2.313,
       "final_reward": 1572.90,
       "final_off_track_rate": 0.40
+    },
+    {
+      "id": "run13",
+      "label": "Run 13\nCurriculum Race",
+      "best_update": 30,
+      "best_steps": 184320,
+      "best_progress": 3.566,
+      "best_reward": 2533.41,
+      "final_progress": 3.566,
+      "final_reward": 2533.41,
+      "final_off_track_rate": 0.0
     }
   ],
   "run4_benchmark": [
@@ -99,6 +110,32 @@
       "suite": "Holdout\nStress",
       "progress": 2.824,
       "reward": 1733.77,
+      "off_track_rate": 0.0
+    }
+  ],
+  "run13_transfer": [
+    {
+      "suite": "Procedural\nBaseline",
+      "progress": 4.634,
+      "reward": 2951.65,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Mixed\nGeneralization",
+      "progress": 4.114,
+      "reward": 2754.86,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Holdout\nHandcrafted",
+      "progress": 3.224,
+      "reward": 2503.84,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Holdout\nStress",
+      "progress": 3.230,
+      "reward": 2447.43,
       "off_track_rate": 0.0
     }
   ]

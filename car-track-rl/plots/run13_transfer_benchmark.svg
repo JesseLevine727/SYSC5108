@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+<rect width="980" height="560" fill="#f8fafc" />
+<text x="40.0" y="48.0" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#0f172a" text-anchor="start">Run 13 From-Scratch Racing Benchmark</text>
+<text x="40.0" y="74.0" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#334155" text-anchor="start">Curriculum-trained racing dynamics checkpoint evaluated on procedural, mixed, and unseen holdout tracks</text>
+<line x1="90.0" y1="100.0" x2="90.0" y2="420.0" stroke="#334155" stroke-width="2" />
+<line x1="90.0" y1="420.0" x2="910.0" y2="420.0" stroke="#334155" stroke-width="2" />
+<line x1="90.0" y1="420.0" x2="910.0" y2="420.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="424.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">0.0</text>
+<line x1="90.0" y1="356.0" x2="910.0" y2="356.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="360.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">1.0</text>
+<line x1="90.0" y1="292.0" x2="910.0" y2="292.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="296.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">2.0</text>
+<line x1="90.0" y1="228.0" x2="910.0" y2="228.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="232.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">3.0</text>
+<line x1="90.0" y1="164.0" x2="910.0" y2="164.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="168.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">4.0</text>
+<line x1="90.0" y1="100.0" x2="910.0" y2="100.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="104.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">5.0</text>
+<rect x="154.5" y="123.4" width="76.0" height="296.6" rx="4" fill="#2563eb" />
+<text x="192.5" y="115.4" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#2563eb" text-anchor="middle">4.63</text>
+<text x="192.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Procedural</text>
+<text x="192.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Baseline</text>
+<text x="192.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2952</text>
+<text x="192.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<rect x="359.5" y="156.7" width="76.0" height="263.3" rx="4" fill="#059669" />
+<text x="397.5" y="148.7" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#059669" text-anchor="middle">4.11</text>
+<text x="397.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Mixed</text>
+<text x="397.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Generalization</text>
+<text x="397.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2755</text>
+<text x="397.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<rect x="564.5" y="213.7" width="76.0" height="206.3" rx="4" fill="#d97706" />
+<text x="602.5" y="205.7" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="middle">3.22</text>
+<text x="602.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Holdout</text>
+<text x="602.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Handcrafted</text>
+<text x="602.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2504</text>
+<text x="602.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<rect x="769.5" y="213.3" width="76.0" height="206.7" rx="4" fill="#dc2626" />
+<text x="807.5" y="205.3" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#dc2626" text-anchor="middle">3.23</text>
+<text x="807.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Holdout</text>
+<text x="807.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Stress</text>
+<text x="807.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2447</text>
+<text x="807.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<line x1="90.0" y1="228.0" x2="910.0" y2="228.0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 4" />
+<text x="905.0" y="222.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">3.0 progress</text>
+<text x="90.0" y="528.0" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">Run 13 is the first checkpoint that combines fast racing dynamics with zero off-track failures across all evaluated holdout suites.</text>
+</svg>

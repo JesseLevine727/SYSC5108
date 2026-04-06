@@ -24,7 +24,7 @@
 <text x="680.0" y="464.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">604k</text>
 <line x1="870.0" y1="90.0" x2="870.0" y2="440.0" stroke="#e2e8f0" stroke-width="1" />
 <text x="870.0" y="464.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">806k</text>
-<polyline points="399.5,164.5 167.9,113.6 833.8,143.2 196.9,143.6 370.6,151.7" fill="none" stroke="#059669" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+<polyline points="399.5,164.5 167.9,113.6 833.8,143.2 196.9,143.6 370.6,151.7 283.7,111.6" fill="none" stroke="#059669" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
 <circle cx="399.5" cy="164.5" r="6.0" fill="#059669" stroke="white" stroke-width="2" />
 <text x="409.5" y="154.5" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#059669" text-anchor="start">RUN1</text>
 <circle cx="167.9" cy="113.6" r="6.0" fill="#059669" stroke="white" stroke-width="2" />
@@ -35,5 +35,7 @@
 <text x="206.9" y="133.6" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#059669" text-anchor="start">RUN4</text>
 <circle cx="370.6" cy="151.7" r="6.0" fill="#059669" stroke="white" stroke-width="2" />
 <text x="380.6" y="141.7" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#059669" text-anchor="start">RUN5</text>
+<circle cx="283.7" cy="111.6" r="6.0" fill="#059669" stroke="white" stroke-width="2" />
+<text x="293.7" y="101.6" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#059669" text-anchor="start">RUN13</text>
 <text x="110.0" y="500.0" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">Lower and further left is better on sample cost. Run 4 was the fastest robust multi-generator solution.</text>
 </svg>
