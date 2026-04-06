@@ -8,6 +8,9 @@ This directory contains a standalone PPO trainer for the CartPole control proble
 - `evaluate.py`: checkpoint evaluation and rollout playback
 - `train_dqn.py`: DQN training for more stable solved CartPole performance
 - `evaluate_dqn.py`: DQN checkpoint evaluation
+- `perf_checklist.py`: held-out evaluation, parity, long-horizon, robustness, and inference speed checks
+- `robustness_boundaries.py`: one-at-a-time physical parameter boundary search
+- `joint_domain_robustness.py`: multi-parameter random-domain robustness scan
 - `cartpole_rl/`: CartPole environment and policy network
 - `artifacts/`: saved checkpoints
 
@@ -69,3 +72,168 @@ Open a simple pygame demo window for the solved DQN checkpoint:
 ```bash
 ../.venv/bin/python evaluate_dqn.py --checkpoint dqn_gpu_tuned/dqn_best_model.pt --episodes 3 --device cuda --render human --delay 0.03
 ```
+
+## Results Summary
+
+The final recommended model is the tuned DQN checkpoint:
+
+- `dqn_gpu_tuned/dqn_best_model.pt`
+- trained on `NVIDIA GeForce RTX 5080`
+- validated separately on GPU at `mean_return=500.00`, `solved_rate=1.00` over 10 evaluation episodes
+
+Key takeaways:
+
+- PPO learned strong policies but was not stable enough to keep solved performance consistently
+- DQN reached consistent solved CartPole performance and became the production checkpoint
+- the saved solved model generalizes well across held-out seeds and longer horizons
+- the policy is robust to large one-at-a-time physics changes, but joint multi-parameter perturbations still create a failure region
+
+## Experiments Run
+
+### PPO
+
+Initial PPO smoke test:
+
+- short CPU smoke run completed end to end
+- longer CPU test reached `best_mean_return=99.38`
+
+Default GPU PPO run:
+
+- checkpoint directory: `gpu_artifacts/`
+- best training-time validation: `mean_return=465.95`, `solved_rate=0.70`
+- separate GPU evaluation of `gpu_artifacts/ppo_best_model.pt`: returns `500, 500, 338, 500, 439`
+- summary: strong, but not consistently solved
+
+Tuned GPU PPO run:
+
+- checkpoint directory: `solve_run_a/`
+- lower learning rate and lower entropy to reduce drift
+- best result: `mean_return=455.10`, `solved_rate=0.75`
+- summary: still peaked and drifted, so PPO was not chosen as the final model
+
+### DQN
+
+Initial GPU DQN run:
+
+- checkpoint directory: `dqn_gpu_artifacts/`
+- best result: `mean_return=197.80`, `solved_rate=0.00`
+- summary: improved, but not good enough
+
+Tuned GPU DQN run:
+
+- checkpoint directory: `dqn_gpu_tuned/`
+- tuned settings: `learning_rate=1e-3`, `batch_size=64`, `warmup_steps=1000`, `target_update_every=100`, `epsilon_decay_steps=10000`
+- solved at training episode `200`
+- training-time validation: `mean_return=500.00`, `solved_rate=1.00`
+- separate GPU evaluation over 10 episodes: all `10/10` episodes reached the 500-step cap
+
+### Demo
+
+The evaluator now supports:
+
+- terminal text rendering
+- a simple `pygame` window via `--render human`
+
+Verified demo command:
+
+```bash
+./.venv/bin/python cartpole-rl/evaluate_dqn.py --checkpoint dqn_gpu_tuned/dqn_best_model.pt --episodes 3 --device cuda --render human --delay 0.03
+```
+
+## Performance Checklist
+
+The solved DQN checkpoint was checked with `perf_checklist.py`.
+
+Held-out seeds:
+
+- 100 fresh episodes
+- `mean_return=500.00`
+- `min_return=500.00`
+- `solved_rate=1.00`
+
+Repeatability:
+
+- three disjoint seed batches all produced `mean_return=500.00`
+- `std_of_means=0.00`
+
+CPU/GPU parity:
+
+- identical returns on CPU and GPU for matched evaluation seeds
+- `max_abs_diff=0.00`
+
+Long-horizon stability:
+
+- `max_steps=750`: `30/30` episodes reached 750
+- `max_steps=1000`: `30/30` episodes reached 1000
+
+Small robustness spot checks:
+
+- nominal
+- gravity `+/- 5%`
+- force magnitude `+/- 5%`
+- pole length `+/- 5%`
+- all of the above remained solved
+
+Inference speed on GPU:
+
+- batch 1: about `0.030 ms` per forward pass
+- batch 1024: about `0.025 ms` per batch forward pass
+
+## One-At-A-Time Robustness Boundaries
+
+These are one-parameter-at-a-time boundaries for the solved DQN checkpoint. `strict` means all evaluation episodes still hit the cap. `practical` means the policy remains near-solved but may no longer be perfect.
+
+Strict boundaries:
+
+- `gravity`: `0.4883x` to `1.6221x`
+- `masscart`: `0.2950x` to `2.4355x`
+- `masspole`: no failure found in tested range `0.0200x` to `10.0000x`
+- `length`: `0.6056x` to `1.3031x`
+- `force_mag`: `0.4223x` to `5.5000x`
+- `tau`: no failure down to `0.1000x`, and up to `1.4953x`
+
+Practical boundaries:
+
+- `gravity`: `0.4727x` to `2.2578x`
+- `masscart`: `0.2459x` to `2.4980x`
+- `masspole`: no failure found in tested range `0.0200x` to `10.0000x`
+- `length`: `0.5823x` to `1.3148x`
+- `force_mag`: `0.4129x` to `5.7188x`
+- `tau`: no failure down to `0.1000x`, and up to `1.5762x`
+
+Weakest one-at-a-time parameter:
+
+- pole `length`
+
+## Joint Random-Domain Robustness
+
+Joint robustness was tested with `joint_domain_robustness.py`, which perturbs all environment parameters together instead of one at a time.
+
+Interpretation of `alpha`:
+
+- `alpha=0.0`: nominal environment
+- `alpha=1.0`: full joint box induced by the one-at-a-time bounds
+
+Confirmatory results with 80 random domains and 5 episodes per domain:
+
+- `strict_box alpha=0.6`: `strict_domain_pass_rate=0.975`
+- `strict_box alpha=0.7`: `strict_domain_pass_rate=0.950`
+- `strict_box alpha=0.8`: `strict_domain_pass_rate=0.900`
+- `strict_box alpha=1.0`: `strict_domain_pass_rate=0.8375`
+- `practical_box alpha=0.6`: `practical_domain_pass_rate=0.9625`
+- `practical_box alpha=0.7`: `practical_domain_pass_rate=0.8625`
+- `practical_box alpha=0.8`: `practical_domain_pass_rate=0.8125`
+- `practical_box alpha=1.0`: `practical_domain_pass_rate=0.7750`
+
+Main conclusion:
+
+- the model is robust in a meaningful joint region
+- the multi-parameter failure region begins around `alpha=0.7`
+- safe joint use is much smaller than the full one-at-a-time envelope
+
+Representative failing joint domains tended to combine:
+
+- shorter pole length
+- elevated or reduced force magnitude
+- slightly elevated `tau`
+- sometimes elevated gravity or unusual mass ratios
