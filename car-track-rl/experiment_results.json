@@ -1,0 +1,105 @@
+{
+  "runs": [
+    {
+      "id": "run1",
+      "label": "Run 1\nSingle-Track",
+      "best_update": 50,
+      "best_steps": 307200,
+      "best_progress": 2.991,
+      "best_reward": 2370.26,
+      "final_progress": 0.310,
+      "final_reward": 242.40,
+      "final_off_track_rate": 1.0
+    },
+    {
+      "id": "run2",
+      "label": "Run 2\nStabilized PPO",
+      "best_update": 10,
+      "best_steps": 61440,
+      "best_progress": 3.544,
+      "best_reward": 2759.32,
+      "final_progress": 3.544,
+      "final_reward": 2759.32,
+      "final_off_track_rate": 0.0
+    },
+    {
+      "id": "run3",
+      "label": "Run 3\nRand One Family",
+      "best_update": 125,
+      "best_steps": 768000,
+      "best_progress": 3.222,
+      "best_reward": 2782.26,
+      "final_progress": 3.222,
+      "final_reward": 2782.26,
+      "final_off_track_rate": 0.0
+    },
+    {
+      "id": "run4",
+      "label": "Run 4\nMulti-Generator",
+      "best_update": 15,
+      "best_steps": 92160,
+      "best_progress": 3.218,
+      "best_reward": 2231.18,
+      "final_progress": 3.218,
+      "final_reward": 2231.18,
+      "final_off_track_rate": 0.0
+    },
+    {
+      "id": "run5",
+      "label": "Run 5\nTrain vs Holdout",
+      "best_update": 45,
+      "best_steps": 276480,
+      "best_progress": 3.130,
+      "best_reward": 2065.53,
+      "final_progress": 2.313,
+      "final_reward": 1572.90,
+      "final_off_track_rate": 0.40
+    }
+  ],
+  "run4_benchmark": [
+    {
+      "suite": "Baseline",
+      "progress": 3.542,
+      "reward": 2500.30,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Generalization",
+      "progress": 3.497,
+      "reward": 2405.14,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Stress",
+      "progress": 3.631,
+      "reward": 2464.33,
+      "off_track_rate": 0.0
+    }
+  ],
+  "run5_transfer": [
+    {
+      "suite": "Procedural\nBaseline",
+      "progress": 3.495,
+      "reward": 2507.48,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Mixed\nGeneralization",
+      "progress": 3.275,
+      "reward": 2230.07,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Holdout\nHandcrafted",
+      "progress": 2.981,
+      "reward": 1769.65,
+      "off_track_rate": 0.0
+    },
+    {
+      "suite": "Holdout\nStress",
+      "progress": 2.824,
+      "reward": 1733.77,
+      "off_track_rate": 0.0
+    }
+  ]
+}

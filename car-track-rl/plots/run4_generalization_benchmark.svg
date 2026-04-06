@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560">
+<rect width="960" height="560" fill="#f8fafc" />
+<text x="40.0" y="48.0" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#0f172a" text-anchor="start">Run 4 Multi-Generator Benchmark</text>
+<text x="40.0" y="74.0" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#334155" text-anchor="start">Solved checkpoint performance across baseline, full randomization, and stress</text>
+<line x1="90.0" y1="100.0" x2="90.0" y2="420.0" stroke="#334155" stroke-width="2" />
+<line x1="90.0" y1="420.0" x2="890.0" y2="420.0" stroke="#334155" stroke-width="2" />
+<line x1="90.0" y1="420.0" x2="890.0" y2="420.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="424.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">0.0</text>
+<line x1="90.0" y1="340.0" x2="890.0" y2="340.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="344.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">0.9</text>
+<line x1="90.0" y1="260.0" x2="890.0" y2="260.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="264.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">1.9</text>
+<line x1="90.0" y1="180.0" x2="890.0" y2="180.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="184.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">2.8</text>
+<line x1="90.0" y1="100.0" x2="890.0" y2="100.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="104.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">3.8</text>
+<rect x="183.3" y="121.7" width="80.0" height="298.3" rx="4" fill="#2563eb" />
+<text x="223.3" y="113.7" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#2563eb" text-anchor="middle">3.54</text>
+<text x="223.3" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Baseline</text>
+<text x="223.3" y="468.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2500</text>
+<rect x="450.0" y="125.5" width="80.0" height="294.5" rx="4" fill="#059669" />
+<text x="490.0" y="117.5" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#059669" text-anchor="middle">3.50</text>
+<text x="490.0" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Generalization</text>
+<text x="490.0" y="468.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2405</text>
+<rect x="716.7" y="114.2" width="80.0" height="305.8" rx="4" fill="#d97706" />
+<text x="756.7" y="106.2" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="middle">3.63</text>
+<text x="756.7" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Stress</text>
+<text x="756.7" y="468.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2464</text>
+<text x="90.0" y="522.0" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">Run 4 shows the strongest broad procedural robustness: all three suites stayed above 3.49 mean progress.</text>
+</svg>

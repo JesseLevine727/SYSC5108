@@ -80,6 +80,21 @@ Benchmark a checkpoint on procedural, mixed, and holdout handcrafted settings:
 ./.venv/bin/python benchmark_generalization.py --checkpoint artifacts/ppo_solved_model.pt --episodes 24
 ```
 
+## Plots
+
+Generate the summary plots:
+
+```bash
+./.venv/bin/python generate_experiment_plots.py
+```
+
+Generated SVGs are written to `plots/`:
+
+- `plots/training_summary.svg`
+- `plots/sample_efficiency.svg`
+- `plots/run4_generalization_benchmark.svg`
+- `plots/run5_transfer_benchmark.svg`
+
 ## Experiment Summary
 
 All runs below were trained with PPO in `torch` on the local RTX 5080 GPU.

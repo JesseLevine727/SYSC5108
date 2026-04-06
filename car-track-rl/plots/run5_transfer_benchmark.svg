@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="560" viewBox="0 0 980 560">
+<rect width="980" height="560" fill="#f8fafc" />
+<text x="40.0" y="48.0" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#0f172a" text-anchor="start">Run 5 Transfer Benchmark</text>
+<text x="40.0" y="74.0" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#334155" text-anchor="start">Best checkpoint from train-only pool evaluated on seen, mixed, and unseen holdout tracks</text>
+<line x1="90.0" y1="100.0" x2="90.0" y2="420.0" stroke="#334155" stroke-width="2" />
+<line x1="90.0" y1="420.0" x2="910.0" y2="420.0" stroke="#334155" stroke-width="2" />
+<line x1="90.0" y1="420.0" x2="910.0" y2="420.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="424.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">0.0</text>
+<line x1="90.0" y1="340.0" x2="910.0" y2="340.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="344.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">0.9</text>
+<line x1="90.0" y1="260.0" x2="910.0" y2="260.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="264.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">1.9</text>
+<line x1="90.0" y1="180.0" x2="910.0" y2="180.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="184.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">2.8</text>
+<line x1="90.0" y1="100.0" x2="910.0" y2="100.0" stroke="#e2e8f0" stroke-width="1" />
+<text x="80.0" y="104.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">3.8</text>
+<rect x="154.5" y="125.7" width="76.0" height="294.3" rx="4" fill="#2563eb" />
+<text x="192.5" y="117.7" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#2563eb" text-anchor="middle">3.50</text>
+<text x="192.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Procedural</text>
+<text x="192.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Baseline</text>
+<text x="192.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2507</text>
+<text x="192.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<rect x="359.5" y="144.2" width="76.0" height="275.8" rx="4" fill="#059669" />
+<text x="397.5" y="136.2" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#059669" text-anchor="middle">3.27</text>
+<text x="397.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Mixed</text>
+<text x="397.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Generalization</text>
+<text x="397.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 2230</text>
+<text x="397.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<rect x="564.5" y="169.0" width="76.0" height="251.0" rx="4" fill="#d97706" />
+<text x="602.5" y="161.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#d97706" text-anchor="middle">2.98</text>
+<text x="602.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Holdout</text>
+<text x="602.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Handcrafted</text>
+<text x="602.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 1770</text>
+<text x="602.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<rect x="769.5" y="182.2" width="76.0" height="237.8" rx="4" fill="#dc2626" />
+<text x="807.5" y="174.2" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#dc2626" text-anchor="middle">2.82</text>
+<text x="807.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Holdout</text>
+<text x="807.5" y="462.0" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="400" fill="#0f172a" text-anchor="middle">Stress</text>
+<text x="807.5" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">reward 1734</text>
+<text x="807.5" y="488.0" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="middle">off-track 0.00</text>
+<line x1="90.0" y1="167.4" x2="910.0" y2="167.4" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6 4" />
+<text x="905.0" y="161.4" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="400" fill="#334155" text-anchor="end">3.0 progress</text>
+<text x="90.0" y="528.0" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#334155" text-anchor="start">Holdout performance is lower than seen/mixed distributions, but the best checkpoint still keeps off-track failures at zero.</text>
+</svg>
