@@ -115,6 +115,9 @@ class CarTrackEnv(gym.Env):
         self._pygame_ready = False
         self._render_outer = np.zeros((self.track_sample_count, 2), dtype=np.float32)
         self._render_inner = np.zeros((self.track_sample_count, 2), dtype=np.float32)
+        self._camera_position = np.zeros(2, dtype=np.float32)
+        self._camera_heading = 0.0
+        self._camera_ready = False
         self._resample_domain()
 
     @property
@@ -155,6 +158,9 @@ class CarTrackEnv(gym.Env):
         self.total_progress = 0.0
         self.last_track_index = start_index
         self.last_track_progress = float(self.track_progress[start_index])
+        self._camera_position = self.position.copy()
+        self._camera_heading = self.heading
+        self._camera_ready = False
 
         lateral_error = self._signed_lateral_error(self.position, guess_index=start_index)
         heading_error = self._heading_error(start_index)
@@ -251,30 +257,64 @@ class CarTrackEnv(gym.Env):
             if event.type == pygame.QUIT:
                 raise SystemExit
 
-        self._screen.fill((74, 125, 72))
+        width, height = self._screen.get_size()
+        track_heading = math.atan2(
+            float(self.track_tangents[self.last_track_index][1]),
+            float(self.track_tangents[self.last_track_index][0]),
+        )
+        heading_offset = self._wrap_angle(self.heading - track_heading)
+        target_heading = self._wrap_angle(track_heading + (0.35 * heading_offset))
+        target_forward = np.asarray([math.cos(target_heading), math.sin(target_heading)], dtype=np.float32)
+        target_center = self.position + (target_forward * 34.0)
+        if not self._camera_ready:
+            self._camera_position = target_center.astype(np.float32)
+            self._camera_heading = target_heading
+            self._camera_ready = True
+        else:
+            self._camera_position = (
+                (0.82 * self._camera_position) + (0.18 * target_center.astype(np.float32))
+            ).astype(np.float32)
+            self._camera_heading = self._lerp_angle(self._camera_heading, target_heading, 0.16)
 
-        outer_points = [self._world_to_screen(point) for point in self._render_outer]
-        inner_points = [self._world_to_screen(point) for point in self._render_inner]
-        centerline_points = [self._world_to_screen(point) for point in self.track_points]
+        camera_forward = np.asarray([math.cos(self._camera_heading), math.sin(self._camera_heading)], dtype=np.float32)
+        camera_right = np.asarray([camera_forward[1], -camera_forward[0]], dtype=np.float32)
+        camera_center = self._camera_position
+        camera_anchor = np.asarray([width * 0.5, height * 0.72], dtype=np.float32)
+        camera_scale = float(np.clip(4.4 - ((self.track_half_width - self.base_track_half_width) * 0.04), 3.6, 4.8))
 
-        pygame.draw.polygon(self._screen, (58, 58, 58), outer_points)
-        pygame.draw.polygon(self._screen, (74, 125, 72), inner_points)
-        pygame.draw.lines(self._screen, (230, 230, 230), True, centerline_points, 2)
+        self._draw_grass_background(width, height)
 
-        car_points = self._car_polygon()
-        pygame.draw.polygon(self._screen, (196, 67, 67), car_points)
-        pygame.draw.polygon(self._screen, (245, 229, 99), car_points, 2)
-
-        hud_lines = [
-            f"Family: {self.track_family}",
-            f"Speed: {self.speed:0.1f}",
-            f"Laps: {self.laps_completed}",
-            f"Progress: {self.total_progress / self.track_length:0.2f}",
-            f"Steps: {self.steps}",
+        road_polygon = [
+            self._camera_to_screen(point, camera_center, camera_forward, camera_right, camera_scale, camera_anchor)
+            for point in self._render_outer
         ]
-        for index, line in enumerate(hud_lines):
-            text = self._font.render(line, True, (255, 255, 255))
-            self._screen.blit(text, (14, 14 + (index * 24)))
+        road_polygon.extend(
+            self._camera_to_screen(point, camera_center, camera_forward, camera_right, camera_scale, camera_anchor)
+            for point in reversed(self._render_inner)
+        )
+        outer_points = [
+            self._camera_to_screen(point, camera_center, camera_forward, camera_right, camera_scale, camera_anchor)
+            for point in self._render_outer
+        ]
+        inner_points = [
+            self._camera_to_screen(point, camera_center, camera_forward, camera_right, camera_scale, camera_anchor)
+            for point in self._render_inner
+        ]
+        centerline_points = [
+            self._camera_to_screen(point, camera_center, camera_forward, camera_right, camera_scale, camera_anchor)
+            for point in self.track_points
+        ]
+
+        pygame.draw.polygon(self._screen, (70, 72, 76), road_polygon)
+        pygame.draw.lines(self._screen, (246, 246, 240), True, outer_points, 4)
+        pygame.draw.lines(self._screen, (246, 246, 240), True, inner_points, 4)
+        self._draw_center_dashes(centerline_points)
+        self._draw_track_glow(centerline_points, int(self.track_half_width * camera_scale * 1.8))
+        self._draw_car_sprite(
+            self._camera_to_screen(self.position, camera_center, camera_forward, camera_right, camera_scale, camera_anchor)
+        )
+        self._draw_minimap(width, height)
+        self._draw_hud()
 
         pygame.display.flip()
         self._clock.tick(self.frame_rate)
@@ -296,6 +336,7 @@ class CarTrackEnv(gym.Env):
         self._clock = None
         self._font = None
         self._pygame_ready = False
+        self._camera_ready = False
 
     def set_domain_randomization(self, scale: float) -> None:
         self.domain_randomization_scale = max(0.0, min(1.5, float(scale)))
@@ -726,6 +767,132 @@ class CarTrackEnv(gym.Env):
             self._world_to_screen(rear_right),
         ]
 
+    def _camera_to_screen(
+        self,
+        point: np.ndarray,
+        camera_center: np.ndarray,
+        camera_forward: np.ndarray,
+        camera_right: np.ndarray,
+        camera_scale: float,
+        camera_anchor: np.ndarray,
+    ) -> tuple[int, int]:
+        delta = point - camera_center
+        local_x = float(np.dot(delta, camera_right))
+        local_y = float(np.dot(delta, camera_forward))
+        return (
+            int(camera_anchor[0] + (local_x * camera_scale)),
+            int(camera_anchor[1] - (local_y * camera_scale)),
+        )
+
+    def _draw_grass_background(self, width: int, height: int) -> None:
+        self._screen.fill((64, 118, 62))
+        stripe_colors = [(72, 128, 68), (59, 111, 57)]
+        stripe_width = 64
+        for index, offset in enumerate(range(-height, width + height, stripe_width)):
+            pygame.draw.line(
+                self._screen,
+                stripe_colors[index % len(stripe_colors)],
+                (offset, 0),
+                (offset + height, height),
+                stripe_width // 2,
+            )
+
+        for offset in range(0, width, 160):
+            pygame.draw.line(self._screen, (78, 136, 74), (offset, 0), (offset, height), 2)
+
+    def _draw_center_dashes(self, centerline_points: list[tuple[int, int]]) -> None:
+        dash_stride = 18
+        dash_length = 8
+        for start in range(0, len(centerline_points), dash_stride):
+            dash_points = centerline_points[start:start + dash_length]
+            if len(dash_points) >= 2:
+                pygame.draw.lines(self._screen, (248, 232, 164), False, dash_points, 4)
+
+    def _draw_track_glow(self, centerline_points: list[tuple[int, int]], width: int) -> None:
+        glow_surface = pygame.Surface(self._screen.get_size(), pygame.SRCALPHA)
+        glow_width = max(width, 6)
+        pygame.draw.lines(glow_surface, (30, 30, 30, 28), True, centerline_points, glow_width)
+        self._screen.blit(glow_surface, (0, 0))
+
+    def _draw_car_sprite(self, center: tuple[int, int]) -> None:
+        cx, cy = center
+        shadow = [(cx - 15, cy - 30), (cx + 15, cy - 30), (cx + 20, cy + 30), (cx - 20, cy + 30)]
+        pygame.draw.polygon(self._screen, (0, 0, 0, 0), shadow)
+
+        shadow_surface = pygame.Surface(self._screen.get_size(), pygame.SRCALPHA)
+        pygame.draw.polygon(shadow_surface, (0, 0, 0, 90), [(x + 5, y + 6) for x, y in shadow])
+        self._screen.blit(shadow_surface, (0, 0))
+
+        wheel_color = (26, 26, 28)
+        wheel_specs = [
+            pygame.Rect(cx - 24, cy - 24, 8, 18),
+            pygame.Rect(cx + 16, cy - 24, 8, 18),
+            pygame.Rect(cx - 24, cy + 4, 8, 18),
+            pygame.Rect(cx + 16, cy + 4, 8, 18),
+        ]
+        for wheel in wheel_specs:
+            pygame.draw.rect(self._screen, wheel_color, wheel, border_radius=3)
+
+        body_points = [
+            (cx, cy - 36),
+            (cx + 17, cy - 24),
+            (cx + 20, cy + 18),
+            (cx + 12, cy + 34),
+            (cx - 12, cy + 34),
+            (cx - 20, cy + 18),
+            (cx - 17, cy - 24),
+        ]
+        pygame.draw.polygon(self._screen, (201, 62, 56), body_points)
+        pygame.draw.polygon(self._screen, (246, 229, 170), body_points, 3)
+
+        windshield = [(cx - 11, cy - 16), (cx + 11, cy - 16), (cx + 8, cy + 5), (cx - 8, cy + 5)]
+        rear_window = [(cx - 10, cy + 8), (cx + 10, cy + 8), (cx + 7, cy + 23), (cx - 7, cy + 23)]
+        pygame.draw.polygon(self._screen, (145, 206, 225), windshield)
+        pygame.draw.polygon(self._screen, (110, 168, 191), rear_window)
+        pygame.draw.circle(self._screen, (255, 244, 196), (cx - 8, cy - 30), 3)
+        pygame.draw.circle(self._screen, (255, 244, 196), (cx + 8, cy - 30), 3)
+
+    def _draw_minimap(self, width: int, height: int) -> None:
+        minimap_size = 176
+        margin = 18
+        left = width - minimap_size - margin
+        top = margin
+        minimap = pygame.Surface((minimap_size, minimap_size), pygame.SRCALPHA)
+        minimap.fill((15, 18, 20, 168))
+        inset = 16
+        scale = (minimap_size - (2 * inset)) / (2.0 * self.world_extent)
+
+        def project(point: np.ndarray) -> tuple[int, int]:
+            return (
+                int((point[0] * scale) + (minimap_size / 2.0)),
+                int((minimap_size / 2.0) - (point[1] * scale)),
+            )
+
+        road_polygon = [project(point) for point in self._render_outer]
+        road_polygon.extend(project(point) for point in reversed(self._render_inner))
+        pygame.draw.polygon(minimap, (72, 74, 80), road_polygon)
+        pygame.draw.lines(minimap, (224, 224, 224), True, [project(point) for point in self._render_outer], 2)
+        pygame.draw.lines(minimap, (224, 224, 224), True, [project(point) for point in self._render_inner], 2)
+        pygame.draw.circle(minimap, (242, 86, 72), project(self.position), 5)
+        self._screen.blit(minimap, (left, top))
+        pygame.draw.rect(self._screen, (232, 232, 232), pygame.Rect(left, top, minimap_size, minimap_size), 2, 10)
+
+    def _draw_hud(self) -> None:
+        hud_surface = pygame.Surface((252, 138), pygame.SRCALPHA)
+        hud_surface.fill((14, 18, 22, 182))
+        self._screen.blit(hud_surface, (16, 16))
+
+        hud_lines = [
+            f"Track  {self.track_family}",
+            f"Speed  {self.speed:0.1f}",
+            f"Laps   {self.laps_completed}",
+            f"Prog   {self.total_progress / self.track_length:0.2f}",
+            f"Steps  {self.steps}",
+        ]
+        for index, line in enumerate(hud_lines):
+            text = self._font.render(line, True, (248, 248, 244))
+            self._screen.blit(text, (30, 28 + (index * 22)))
+
     def _world_to_screen(self, point: np.ndarray) -> tuple[int, int]:
         width = 800
         height = 800
@@ -752,3 +919,7 @@ class CarTrackEnv(gym.Env):
         while angle > math.pi:
             angle -= 2.0 * math.pi
         return angle
+
+    def _lerp_angle(self, current: float, target: float, factor: float) -> float:
+        delta = self._wrap_angle(target - current)
+        return self._wrap_angle(current + (delta * factor))
