@@ -32,6 +32,13 @@ python -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 ```
 
+From a fresh clone of the parent repository, you can also set up a shared root virtual environment and run the demo directly:
+
+```bash
+./setup_rl_demos.sh
+./run_car_track_demo.sh
+```
+
 ## Train
 
 ```bash
@@ -64,6 +71,12 @@ Watch the learned policy:
 
 ```bash
 ./.venv/bin/python evaluate.py --checkpoint artifacts/ppo_best_model.pt --render human --delay 0.02
+```
+
+Fresh-clone launcher from the repo root using the strongest checkpoint:
+
+```bash
+./run_car_track_demo.sh
 ```
 
 Override the evaluation randomization level:

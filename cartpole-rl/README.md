@@ -23,6 +23,13 @@ python -m venv .venv
 ./.venv/bin/pip install -r requirements.txt
 ```
 
+From a fresh clone of the parent repository, you can also set up a shared root virtual environment and run the demo directly:
+
+```bash
+./setup_rl_demos.sh
+./run_cartpole_demo.sh
+```
+
 If you are running from the shared workspace root, use `./.venv/bin/python cartpole-rl/...`. If you `cd cartpole-rl`, use `../.venv/bin/python ...`.
 
 ## Train
@@ -154,6 +161,12 @@ Verified demo command:
 
 ```bash
 ./.venv/bin/python cartpole-rl/evaluate_dqn.py --checkpoint dqn_gpu_tuned/dqn_best_model.pt --episodes 3 --device cuda --render human --delay 0.03
+```
+
+Fresh-clone launcher from the repo root:
+
+```bash
+./run_cartpole_demo.sh
 ```
 
 ## Performance Checklist
