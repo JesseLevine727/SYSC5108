@@ -63,3 +63,9 @@ Evaluate the best DQN checkpoint:
 ```bash
 ../.venv/bin/python evaluate_dqn.py --checkpoint dqn_artifacts/dqn_best_model.pt --episodes 10 --device cuda
 ```
+
+Open a simple pygame demo window for the solved DQN checkpoint:
+
+```bash
+../.venv/bin/python evaluate_dqn.py --checkpoint dqn_gpu_tuned/dqn_best_model.pt --episodes 3 --device cuda --render human --delay 0.03
+```

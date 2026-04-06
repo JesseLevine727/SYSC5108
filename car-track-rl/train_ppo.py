@@ -45,9 +45,15 @@ class PPOConfig:
     entropy_coef_final_scale: float = 0.10
     frame_stack: int = 1
     randomize_start: bool = True
+    train_track_pool: str = "train"
+    evaluation_track_pool: str = "all"
+    min_domain_randomization_scale: float = 0.10
+    max_domain_randomization_scale: float = 1.00
+    domain_randomization_ramp_fraction: float = 0.35
+    evaluation_domain_randomization_scale: float = 1.00
     normalize_observations: bool = True
     observation_clip: float = 5.0
-    solved_progress_threshold: float = 2.90
+    solved_progress_threshold: float = 3.20
     solved_off_track_threshold: float = 0.05
     solved_streak: int = 2
     init_from_checkpoint: str | None = None
@@ -88,9 +94,15 @@ def parse_args() -> PPOConfig:
     parser.add_argument("--entropy-coef-final-scale", type=float, default=0.10)
     parser.add_argument("--frame-stack", type=int, default=1)
     parser.add_argument("--disable-randomize-start", action="store_true")
+    parser.add_argument("--train-track-pool", choices=("train", "procedural", "all"), default="train")
+    parser.add_argument("--evaluation-track-pool", choices=("all", "holdout", "procedural", "train"), default="all")
+    parser.add_argument("--min-domain-randomization-scale", type=float, default=0.10)
+    parser.add_argument("--max-domain-randomization-scale", type=float, default=1.00)
+    parser.add_argument("--domain-randomization-ramp-fraction", type=float, default=0.35)
+    parser.add_argument("--evaluation-domain-randomization-scale", type=float, default=1.00)
     parser.add_argument("--disable-observation-normalization", action="store_true")
     parser.add_argument("--observation-clip", type=float, default=5.0)
-    parser.add_argument("--solved-progress-threshold", type=float, default=2.90)
+    parser.add_argument("--solved-progress-threshold", type=float, default=3.20)
     parser.add_argument("--solved-off-track-threshold", type=float, default=0.05)
     parser.add_argument("--solved-streak", type=int, default=2)
     parser.add_argument("--init-from-checkpoint", type=str, default="")
@@ -122,6 +134,12 @@ def parse_args() -> PPOConfig:
         entropy_coef_final_scale=args.entropy_coef_final_scale,
         frame_stack=args.frame_stack,
         randomize_start=not args.disable_randomize_start,
+        train_track_pool=args.train_track_pool,
+        evaluation_track_pool=args.evaluation_track_pool,
+        min_domain_randomization_scale=args.min_domain_randomization_scale,
+        max_domain_randomization_scale=args.max_domain_randomization_scale,
+        domain_randomization_ramp_fraction=args.domain_randomization_ramp_fraction,
+        evaluation_domain_randomization_scale=args.evaluation_domain_randomization_scale,
         normalize_observations=not args.disable_observation_normalization,
         observation_clip=args.observation_clip,
         solved_progress_threshold=args.solved_progress_threshold,
@@ -155,16 +173,31 @@ def make_env(
     frame_stack: int,
     render_mode: str | None = None,
     randomize_start: bool = True,
+    domain_randomization_scale: float = 1.0,
+    track_pool: str = "train",
 ) -> CarTrackEnv | FrameStackWrapper:
     env = CarTrackEnv(
         seed=seed,
         max_steps=max_steps,
         render_mode=render_mode,
         randomize_start=randomize_start,
+        domain_randomization_scale=domain_randomization_scale,
+        track_pool=track_pool,
     )
     if frame_stack > 1:
         return FrameStackWrapper(env, num_frames=frame_stack)
     return env
+
+
+def base_env(env: CarTrackEnv | FrameStackWrapper) -> CarTrackEnv:
+    return env.env if isinstance(env, FrameStackWrapper) else env
+
+
+def current_domain_randomization_scale(config: PPOConfig, progress_fraction: float) -> float:
+    ramp_fraction = max(config.domain_randomization_ramp_fraction, 1e-6)
+    ramp_progress = min(1.0, max(0.0, progress_fraction / ramp_fraction))
+    scale_span = config.max_domain_randomization_scale - config.min_domain_randomization_scale
+    return config.min_domain_randomization_scale + (scale_span * ramp_progress)
 
 
 def evaluate_policy(
@@ -181,6 +214,8 @@ def evaluate_policy(
         config.max_steps,
         frame_stack=config.frame_stack,
         randomize_start=config.randomize_start,
+        domain_randomization_scale=config.evaluation_domain_randomization_scale,
+        track_pool=config.evaluation_track_pool,
     )
     rewards: list[float] = []
     laps: list[float] = []
@@ -228,9 +263,9 @@ def selection_key(
     benchmark_metrics: dict[str, float | list[float]],
 ) -> tuple[float, float, float]:
     return (
+        -max(float(validation_metrics["off_track_rate"]), float(benchmark_metrics["off_track_rate"])),
         min(float(validation_metrics["mean_progress"]), float(benchmark_metrics["mean_progress"])),
         min(float(validation_metrics["mean_reward"]), float(benchmark_metrics["mean_reward"])),
-        -max(float(validation_metrics["off_track_rate"]), float(benchmark_metrics["off_track_rate"])),
     )
 
 
@@ -266,7 +301,7 @@ def normalize_observation(
 
 
 def initialize_from_checkpoint(model: ActorCritic, checkpoint_path: str) -> int:
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if "policy_network" not in checkpoint:
         raise KeyError(f"{checkpoint_path} does not contain a PPO policy_network.")
 
@@ -328,6 +363,8 @@ def main() -> None:
             config.max_steps,
             frame_stack=config.frame_stack,
             randomize_start=config.randomize_start,
+            domain_randomization_scale=config.min_domain_randomization_scale,
+            track_pool=config.train_track_pool,
         )
         for env_index in range(config.num_envs)
     ]
@@ -369,12 +406,15 @@ def main() -> None:
 
     for update in range(1, config.updates + 1):
         progress_fraction = (update - 1) / max(1, config.updates - 1)
+        domain_randomization_scale = current_domain_randomization_scale(config, progress_fraction)
         current_lr = config.learning_rate * (1.0 - progress_fraction * (1.0 - config.learning_rate_final_scale))
         current_entropy_coef = config.entropy_coef * (
             1.0 - progress_fraction * (1.0 - config.entropy_coef_final_scale)
         )
         for param_group in optimizer.param_groups:
             param_group["lr"] = current_lr
+        for env in envs:
+            base_env(env).set_domain_randomization(domain_randomization_scale)
 
         obs_buf = np.zeros((config.rollout_steps, config.num_envs, state_dim), dtype=np.float32)
         actions_buf = np.zeros((config.rollout_steps, config.num_envs), dtype=np.int64)
@@ -541,7 +581,7 @@ def main() -> None:
                 f"bench_offtrack={benchmark_metrics['off_track_rate']:0.2f} "
                 f"policy_loss={mean_policy_loss:0.4f} value_loss={mean_value_loss:0.4f} "
                 f"entropy={mean_entropy:0.4f} approx_kl={mean_approx_kl:0.5f} "
-                f"ent_coef={current_entropy_coef:0.5f} lr={current_lr:0.6f} "
+                f"rand_scale={domain_randomization_scale:0.2f} ent_coef={current_entropy_coef:0.5f} lr={current_lr:0.6f} "
                 f"kl_stop={int(early_stop_for_kl)} solved_streak={solved_streak} elapsed={elapsed:6.1f}s"
             )
 

@@ -74,11 +74,16 @@ def main() -> None:
             state = step.observation
             episode_return += step.reward
 
-            if render_enabled:
+            if args.render == "text":
                 print("\033[2J\033[H", end="")
                 print(env.render_text())
                 print(f"episode={episode} reward={episode_return:0.1f} action={action}")
                 time.sleep(args.delay)
+            elif args.render == "human":
+                if not env.render_human(delay=args.delay, action=action):
+                    env.close()
+                    print("Window closed by user.")
+                    return
 
             if step.terminated or step.truncated:
                 returns.append(episode_return)
