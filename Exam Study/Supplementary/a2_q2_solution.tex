@@ -1,0 +1,205 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 2, Question 2}\\
+\vspace{0.3em}
+{\large MLE for the Laplace rate parameter}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 2.pdf}, Question 2
+\end{center}
+
+\section*{Question}
+
+Given $n$ independent sample points $x_i$, $i=1,\ldots,n$, from a Laplace distribution with PDF
+\[
+f(x)=\frac{\lambda}{2}e^{-\lambda |x|},
+\qquad \lambda>0,
+\]
+provide the maximum likelihood estimator (MLE) for the parameter $\lambda$.
+
+\section*{Step 1: Identify the model and parameter}
+
+The PDF is a zero-centered Laplace distribution:
+\[
+f(x;\lambda)=\frac{\lambda}{2}e^{-\lambda |x|}.
+\]
+The unknown parameter is $\lambda$, which controls how sharply the density is concentrated around zero. Larger $\lambda$ gives a sharper peak and lighter tails.
+
+Goodfellow, Bengio, and Courville define the Laplace distribution in Chapter 3 as
+\[
+\operatorname{Laplace}(x;\mu,\gamma)
+=
+\frac{1}{2\gamma}\exp\left(-\frac{|x-\mu|}{\gamma}\right).
+\]
+The assignment's distribution is the special case
+\[
+\mu=0,\qquad \gamma=\frac{1}{\lambda}.
+\]
+So estimating $\lambda$ is equivalent to estimating the inverse scale parameter.
+
+\section*{Step 2: Write the likelihood}
+
+The samples are independent, so the joint likelihood is the product of the individual densities:
+\[
+L(\lambda)
+=
+\prod_{i=1}^{n} f(x_i;\lambda).
+\]
+Substitute the PDF:
+\[
+L(\lambda)
+=
+\prod_{i=1}^{n}\left(\frac{\lambda}{2}e^{-\lambda |x_i|}\right).
+\]
+Collect the repeated factors:
+\[
+L(\lambda)
+=
+\left(\frac{\lambda}{2}\right)^n
+\exp\left(-\lambda\sum_{i=1}^{n}|x_i|\right).
+\]
+
+\section*{Step 3: Take the log-likelihood}
+
+MLE usually maximizes the log-likelihood because the logarithm turns products into sums and does not change the maximizer. This is the same principle used in the Chapter 3 slides on MLE and in Goodfellow et al., Chapter 5, Section 5.5.
+
+The log-likelihood is
+\[
+\ell(\lambda)
+=
+\log L(\lambda)
+=
+n\log\lambda-n\log 2-\lambda\sum_{i=1}^{n}|x_i|.
+\]
+
+\section*{Step 4: Differentiate and solve the score equation}
+
+Differentiate with respect to $\lambda$:
+\[
+\frac{d\ell}{d\lambda}
+=
+\frac{n}{\lambda}
+-
+\sum_{i=1}^{n}|x_i|.
+\]
+Set the derivative equal to zero:
+\[
+\frac{n}{\lambda}
+-
+\sum_{i=1}^{n}|x_i|
+=0.
+\]
+Rearrange:
+\[
+\frac{n}{\lambda}
+=
+\sum_{i=1}^{n}|x_i|.
+\]
+Therefore
+\[
+\boxed{
+\hat{\lambda}_{\mathrm{MLE}}
+=
+\frac{n}{\sum_{i=1}^{n}|x_i|}
+}.
+\]
+
+Equivalently,
+\[
+\boxed{
+\hat{\lambda}_{\mathrm{MLE}}
+=
+\frac{1}{\frac{1}{n}\sum_{i=1}^{n}|x_i|}
+}.
+\]
+So the MLE is the inverse of the sample mean absolute value.
+
+\section*{Step 5: Check that it is a maximum}
+
+The second derivative is
+\[
+\frac{d^2\ell}{d\lambda^2}
+=
+-\frac{n}{\lambda^2}.
+\]
+For $\lambda>0$,
+\[
+-\frac{n}{\lambda^2}<0.
+\]
+So the stationary point is a maximum.
+
+One edge case: if every $x_i=0$, then $\sum_i |x_i|=0$, and the likelihood increases without bound as $\lambda\rightarrow\infty$. In that degenerate case there is no finite MLE. For ordinary data with at least one nonzero sample,
+\[
+\sum_{i=1}^{n}|x_i|>0,
+\]
+and the finite MLE above is valid.
+
+\section*{Step 6: Exam Interpretation}
+
+The negative log-likelihood is
+\[
+-\ell(\lambda)
+=
+-n\log\lambda+n\log 2+\lambda\sum_{i=1}^{n}|x_i|.
+\]
+This shows why the Laplace distribution is tied to absolute error: the data-dependent term is proportional to
+\[
+\sum_{i=1}^{n}|x_i|.
+\]
+This contrasts with the Gaussian example from the Chapter 3 slides and Goodfellow et al., Chapter 5, where Gaussian maximum likelihood leads to squared-error terms.
+
+A concise exam answer could be:
+\begin{quote}
+Since the samples are independent,
+\[
+L(\lambda)
+=
+\prod_{i=1}^{n}\frac{\lambda}{2}e^{-\lambda |x_i|}
+=
+\left(\frac{\lambda}{2}\right)^n
+e^{-\lambda\sum_i |x_i|}.
+\]
+Thus
+\[
+\ell(\lambda)=n\log\lambda-n\log 2-\lambda\sum_i |x_i|.
+\]
+Setting the score to zero gives
+\[
+\frac{d\ell}{d\lambda}
+=
+\frac{n}{\lambda}-\sum_i |x_i|
+=0,
+\]
+so
+\[
+\hat{\lambda}_{\mathrm{MLE}}
+=
+\frac{n}{\sum_i |x_i|}.
+\]
+The second derivative is $-n/\lambda^2<0$, confirming a maximum.
+\end{quote}
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 2.pdf}, Question 2.
+\item Local submitted Assignment 2 PDF checked for comparison, Question 2 response.
+\item Slides: Chapter 3 slide deck, slide 26 on the MLE principle and maximizing the log-likelihood of independent samples.
+\item Slides: Chapter 3 slide deck, slide 27 on the Gaussian MLE example, useful as a contrast to the Laplace absolute-error form.
+\item Slides: Chapter 3 slide deck, slide 28 on MLE properties.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 3, Section 3.9.4 on the Laplace distribution.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 5, Section 5.5 on maximum likelihood estimation and log-likelihood.
+\end{itemize}
+
+\end{document}

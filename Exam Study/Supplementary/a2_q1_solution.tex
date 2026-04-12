@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 2, Question 1}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+Assume that the prior for \(q\), the proportion of spam emails sent, is a random
+variable with a uniform distribution. Let \(x\) denote the number of spam emails
+received in a random sample of \(n\) emails. Find the posterior distribution
+\(p(q \mid x)\). Which distribution will \(p(q \mid x)\) be?
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 3 slides, Probability Review:} use Bayes' formula,
+    \(p(X \mid Y) = p(X)p(Y \mid X)/p(Y)\), with the denominator acting as a
+    normalizing constant.
+    \item \textbf{Chapter 3 slides, Maximum Likelihood Estimator:} the likelihood
+    is the probability of the observed sample as a function of the unknown
+    parameter. Here that parameter is the spam probability \(q\).
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    Chapter 3:} a Bernoulli random variable is binary and has
+    \(P(X=1)=\phi\), \(P(X=0)=1-\phi\). A spam/not-spam email is therefore a
+    Bernoulli trial with parameter \(q\), and \(x\) spam emails in \(n\) trials
+    gives a binomial likelihood.
+    \item \textbf{Goodfellow et al., Chapter 5, Bayesian Statistics:} before
+    observing data, knowledge about an unknown parameter is represented by a
+    prior \(p(\theta)\); after observing data, the likelihood is combined with
+    the prior using Bayes' rule to obtain the posterior \(p(\theta \mid \text{data})\).
+\end{itemize}
+
+\section*{Step-by-Step Solution}
+
+\subsection*{1. Identify the random variables}
+
+Each email has two possible outcomes:
+\[
+    \text{spam} = 1, \qquad \text{not spam} = 0.
+\]
+If \(q\) is the unknown probability that an email is spam, then each email can be
+modeled as a Bernoulli trial:
+\[
+    Y_i \mid q \sim \operatorname{Bernoulli}(q).
+\]
+The observed statistic is the count of spam emails:
+\[
+    x = \sum_{i=1}^{n} Y_i.
+\]
+Therefore, conditional on \(q\), the count \(x\) follows a binomial distribution:
+\[
+    X \mid q \sim \operatorname{Binomial}(n,q).
+\]
+
+\subsection*{2. Write the likelihood}
+
+The binomial likelihood is
+\[
+    p(x \mid q)
+    = \binom{n}{x} q^x(1-q)^{n-x},
+    \qquad 0 \le q \le 1.
+\]
+When treating this as a function of \(q\), the binomial coefficient
+\(\binom{n}{x}\) is constant because \(n\) and \(x\) are already observed.
+
+\subsection*{3. Write the prior}
+
+The question states that \(q\) has a uniform prior on \([0,1]\):
+\[
+    q \sim \operatorname{Uniform}(0,1).
+\]
+This has density
+\[
+    p(q) = 1, \qquad 0 \le q \le 1.
+\]
+Equivalently,
+\[
+    \operatorname{Uniform}(0,1) = \operatorname{Beta}(1,1).
+\]
+
+\subsection*{4. Apply Bayes' rule}
+
+Bayes' rule gives
+\[
+    p(q \mid x)
+    =
+    \frac{p(x \mid q)p(q)}{p(x)}.
+\]
+The denominator \(p(x)\) does not depend on \(q\), so it only normalizes the
+posterior. Using proportionality,
+\[
+    p(q \mid x)
+    \propto
+    p(x \mid q)p(q).
+\]
+Substitute the likelihood and prior:
+\[
+    p(q \mid x)
+    \propto
+    \binom{n}{x} q^x(1-q)^{n-x} \cdot 1.
+\]
+Remove the constant \(\binom{n}{x}\), since it does not depend on \(q\):
+\[
+    p(q \mid x)
+    \propto
+    q^x(1-q)^{n-x}.
+\]
+
+\subsection*{5. Match the kernel to a Beta distribution}
+
+A Beta distribution with parameters \(\alpha\) and \(\beta\) has density
+\[
+    \operatorname{Beta}(q;\alpha,\beta)
+    =
+    \frac{1}{B(\alpha,\beta)}
+    q^{\alpha-1}(1-q)^{\beta-1},
+    \qquad 0 \le q \le 1,
+\]
+where
+\[
+    B(\alpha,\beta)
+    =
+    \int_0^1 q^{\alpha-1}(1-q)^{\beta-1}\,dq
+\]
+is the Beta function.
+
+Compare the posterior kernel
+\[
+    q^x(1-q)^{n-x}
+\]
+with the Beta kernel
+\[
+    q^{\alpha-1}(1-q)^{\beta-1}.
+\]
+Matching exponents gives
+\[
+    \alpha - 1 = x,
+    \qquad
+    \beta - 1 = n-x.
+\]
+Therefore,
+\[
+    \alpha = x+1,
+    \qquad
+    \beta = n-x+1.
+\]
+
+\section*{Final Answer}
+
+\[
+    \boxed{
+    p(q \mid x)
+    =
+    \operatorname{Beta}(q; x+1, n-x+1)
+    }
+\]
+or, written as a normalized density,
+\[
+    \boxed{
+    p(q \mid x)
+    =
+    \frac{1}{B(x+1,n-x+1)}
+    q^x(1-q)^{n-x},
+    \qquad 0 \le q \le 1.
+    }
+\]
+
+The posterior is a \textbf{Beta distribution}. In words, the uniform prior
+\(\operatorname{Beta}(1,1)\) contributes one pseudo-count to each class, so after
+observing \(x\) spam emails and \(n-x\) non-spam emails, the posterior becomes
+\[
+    q \mid x \sim \operatorname{Beta}(1+x,\;1+n-x).
+\]
+
+\section*{Exam Notes}
+
+\begin{itemize}
+    \item This is the standard Beta-binomial conjugacy result:
+    \[
+        \operatorname{Beta}(\alpha,\beta)
+        + \operatorname{Binomial}(n,q)
+        \rightarrow
+        \operatorname{Beta}(\alpha+x,\beta+n-x).
+    \]
+    \item With the assignment's uniform prior, \(\alpha=\beta=1\), so the result
+    reduces to \(\operatorname{Beta}(x+1,n-x+1)\).
+    \item The posterior mean is
+    \[
+        \mathbb{E}[q \mid x]
+        =
+        \frac{x+1}{n+2}.
+    \]
+    This is not required to answer the question, but it is a useful exam check:
+    it is a smoothed estimate of the spam proportion, slightly pulled away from
+    exactly \(0\) or \(1\) by the uniform prior.
+\end{itemize}
+
+\end{document}
