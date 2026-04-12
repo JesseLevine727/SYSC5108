@@ -1,0 +1,297 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 4, Question 2}\\
+\vspace{0.3em}
+{\large Markov chain sender example: marginals, revisits, and time averages}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 4.pdf}, Question 2
+\end{center}
+
+\section*{Question Summary}
+
+Question 2 refers to the example on Slide 10 of Chapter 6. The sender has a two-state Markov chain with transition matrix
+\[
+P=
+\begin{bmatrix}
+p & 1-p\\
+0 & 1
+\end{bmatrix}.
+\]
+Interpretation:
+\begin{itemize}
+\item State \(0\): the sender is still trying to send the message.
+\item State \(1\): the message has been sent successfully.
+\end{itemize}
+
+The chain starts in state \(0\) at time \(n=0\), so the initial distribution is
+\[
+\pi(0)=
+\begin{bmatrix}
+1 & 0
+\end{bmatrix}.
+\]
+
+State \(1\) is absorbing, because once the message is sent successfully, the sender stays in state \(1\):
+\[
+P_{11}=1.
+\]
+
+\section*{Step 1: Use the Marginal Distribution Update Rule}
+
+Chapter 6 slides define the marginal distribution by
+\[
+\pi_i(n)=P\{X_n=i\}
+\]
+and the update rule
+\[
+\pi^T(n+1)=\pi^T(n)P.
+\]
+
+The textbook also describes a Markov chain through a transition operator and explains that repeated application of the transition matrix updates the state distribution over time.
+
+Let
+\[
+\pi(n)=
+\begin{bmatrix}
+\pi_0(n) & \pi_1(n)
+\end{bmatrix}.
+\]
+Then
+\[
+\pi(n+1)=\pi(n)
+\begin{bmatrix}
+p & 1-p\\
+0 & 1
+\end{bmatrix}.
+\]
+
+\section*{Part (a): Find \(\pi_0(n)\) and \(\pi_1(n)\)}
+
+From the update rule:
+\[
+\pi_0(n+1)=p\,\pi_0(n),
+\]
+because the only way to be in state \(0\) at time \(n+1\) is to already be in state \(0\) at time \(n\) and remain there.
+
+Since
+\[
+\pi_0(0)=1,
+\]
+we get
+\[
+\pi_0(1)=p,\qquad
+\pi_0(2)=p^2,\qquad
+\ldots
+\]
+So by induction,
+\[
+\boxed{\pi_0(n)=p^n.}
+\]
+
+Because the probabilities must sum to 1,
+\[
+\pi_1(n)=1-\pi_0(n)=1-p^n.
+\]
+So
+\[
+\boxed{\pi_1(n)=1-p^n.}
+\]
+
+\textbf{Check:}
+\[
+\pi(1)=
+\begin{bmatrix}
+1 & 0
+\end{bmatrix}
+\begin{bmatrix}
+p & 1-p\\
+0 & 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+p & 1-p
+\end{bmatrix},
+\]
+which matches the formula for \(n=1\).
+
+\section*{Part (b): Probability the Sender Will Revisit State 0}
+
+Because state \(1\) is absorbing, the chain can revisit state \(0\) only if it stays in state \(0\) on the first step.
+
+Starting from state \(0\):
+\[
+P(X_1=0\mid X_0=0)=p.
+\]
+If the chain moves to state \(1\), it never returns to state \(0\). Therefore,
+\[
+\boxed{P(\text{sender revisits state }0)=p.}
+\]
+
+\textbf{Important distinction:}
+\begin{itemize}
+\item Probability of at least one revisit: \(p\).
+\item Expected number of revisits (from the regenerative method on the slide): \(\eta(0)=\frac{p}{1-p}\) for \(0\le p<1\).
+\end{itemize}
+The question asks for the first quantity, not the second.
+
+\section*{Part (c): Time Average Probabilities \(\bar\pi_0\) and \(\bar\pi_1\)}
+
+The time-average probability of state \(i\) is
+\[
+\bar\pi_i
+=
+\lim_{N\to\infty}\frac{1}{N}\sum_{n=0}^{N-1}\pi_i(n).
+\]
+
+Using part (a):
+\[
+\bar\pi_0
+=
+\lim_{N\to\infty}\frac{1}{N}\sum_{n=0}^{N-1}p^n.
+\]
+For \(0\le p<1\), the geometric sum is bounded:
+\[
+\sum_{n=0}^{N-1}p^n=\frac{1-p^N}{1-p}.
+\]
+Therefore
+\[
+\bar\pi_0
+=
+\lim_{N\to\infty}
+\frac{1-p^N}{N(1-p)}
+=0.
+\]
+So
+\[
+\boxed{\bar\pi_0=0.}
+\]
+
+Since
+\[
+\pi_1(n)=1-p^n,
+\]
+we get
+\[
+\bar\pi_1
+=
+\lim_{N\to\infty}\frac{1}{N}\sum_{n=0}^{N-1}(1-p^n).
+\]
+This is
+\[
+\bar\pi_1
+=
+\lim_{N\to\infty}
+\left(
+1-\frac{1}{N}\sum_{n=0}^{N-1}p^n
+\right)
+=1-0=1.
+\]
+So
+\[
+\boxed{\bar\pi_1=1.}
+\]
+
+\textbf{Interpretation:} for \(0\le p<1\), the sender spends only a transient amount of time in state \(0\), and eventually stays forever in the absorbing success state \(1\).
+
+\textbf{Edge case:} if \(p=1\), then the message is never sent and the chain stays in state \(0\) forever, so
+\[
+\bar\pi_0=1,\qquad \bar\pi_1=0.
+\]
+In the usual episodic sender example, we assume \(0\le p<1\).
+
+\section*{Part (d): Probability the Sender Is in State 0 Before Success}
+
+Before the message is sent successfully, the chain has not yet entered state \(1\). Since the only states are \(0\) and \(1\), the sender must be in state \(0\).
+
+So, for any time before successful transmission,
+\[
+\boxed{P(\text{sender is in state }0\text{ before success})=1.}
+\]
+
+Another way to state this is:
+\[
+X_n=0 \quad \text{for all } n<T,
+\]
+where \(T\) is the first time the message is sent successfully.
+
+\section*{Step 2: Why the Results Make Sense}
+
+This chain has one transient state and one absorbing state:
+\begin{itemize}
+\item State \(0\) is transient when \(0\le p<1\), because eventually the chain leaves it.
+\item State \(1\) is absorbing and therefore recurrent.
+\end{itemize}
+
+That explains all four answers:
+\begin{itemize}
+\item \(\pi_0(n)=p^n\) decays geometrically.
+\item \(\pi_1(n)=1-p^n\) increases to 1.
+\item the probability of ever revisiting state \(0\) is just the probability of staying there on the next step, namely \(p\),
+\item the time average concentrates entirely on state \(1\).
+\end{itemize}
+
+\section*{Concise Exam Answer}
+
+With
+\[
+P=
+\begin{bmatrix}
+p & 1-p\\
+0 & 1
+\end{bmatrix},
+\qquad
+\pi(0)=
+\begin{bmatrix}
+1 & 0
+\end{bmatrix},
+\]
+the marginals satisfy
+\[
+\pi_0(n+1)=p\,\pi_0(n),\qquad \pi_0(0)=1,
+\]
+so
+\[
+\boxed{\pi_0(n)=p^n,\qquad \pi_1(n)=1-p^n.}
+\]
+The sender revisits state \(0\) only if it remains in state \(0\) on the first step, so
+\[
+\boxed{P(\text{revisit state }0)=p.}
+\]
+For \(0\le p<1\),
+\[
+\bar\pi_0=\lim_{N\to\infty}\frac{1}{N}\sum_{n=0}^{N-1}p^n=0,
+\qquad
+\bar\pi_1=1.
+\]
+Hence
+\[
+\boxed{\bar\pi_0=0,\qquad \bar\pi_1=1.}
+\]
+Before the message is sent successfully, the sender must still be in state \(0\), so
+\[
+\boxed{P(\text{sender is in state }0\text{ before success})=1.}
+\]
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 4.pdf}, Question 2.
+\item Local submitted Assignment 4 PDF checked for comparison, Question 2 response.
+\item Slides: Chapter 6 slide deck, slides 6--10 on Markov chains, marginal distributions, stationary transitions, and the episodic sender example.
+\item Slides: Chapter 6 slide deck, slide 11 on classification of states.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 17 on Markov chains, transition operators, stochastic matrices, and stationary distributions.
+\end{itemize}
+
+\end{document}

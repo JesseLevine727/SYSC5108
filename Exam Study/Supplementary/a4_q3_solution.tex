@@ -1,0 +1,373 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 4, Question 3}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+Let the transition probability matrix of a two-state Markov chain be
+\[
+    P =
+    \begin{bmatrix}
+        p & 1-p \\
+        1-p & p
+    \end{bmatrix}.
+\]
+
+\begin{enumerate}[label=(\alph*)]
+    \item Suppose at time \(0\), the distribution of states is
+    \[
+        Q_0 = \begin{bmatrix}0.2\\0.8\end{bmatrix}.
+    \]
+    Find the marginal distribution \(Q_1\) at time \(1\).
+    \item Show that
+    \[
+        P^{(n)}
+        =
+        \begin{bmatrix}
+            \frac12+\frac12(2p-1)^n & \frac12-\frac12(2p-1)^n \\
+            \frac12-\frac12(2p-1)^n & \frac12+\frac12(2p-1)^n
+        \end{bmatrix}.
+    \]
+    \item Find the limiting probabilities.
+    \item Find
+    \[
+        \lim_{n\to\infty} P^{(n)}.
+    \]
+\end{enumerate}
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 6 slides, Marginal Distribution:} the state distribution
+    evolves by multiplication with the transition matrix.
+    \item \textbf{Chapter 6 slides, Chapman-Kolmogorov Equations:} \(n\)-step
+    transition probabilities are entries of \(P^{(n)}\).
+    \item \textbf{Chapter 6 slides, Continuing Cases:} limiting probabilities
+    satisfy the stationary condition.
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    sequence-modeling context:} recurrent probabilistic systems evolve state
+    distributions over time through repeated transition operations.
+\end{itemize}
+
+\section*{Convention}
+
+The Chapter 6 slides write state distributions as row vectors:
+\[
+    \pi^T(n+1)=\pi^T(n)P.
+\]
+This assignment uses a \emph{column-vector} distribution \(Q_n\), so here we use
+\[
+    Q_{n+1}=PQ_n.
+\]
+The math is the same; only the orientation changes.
+
+\section*{Part (a): Find \(Q_1\)}
+
+Given
+\[
+    Q_0=
+    \begin{bmatrix}
+        0.2\\
+        0.8
+    \end{bmatrix},
+\]
+the distribution at time \(1\) is
+\[
+    Q_1 = P Q_0.
+\]
+Compute:
+\[
+\begin{aligned}
+    Q_1
+    &=
+    \begin{bmatrix}
+        p & 1-p \\
+        1-p & p
+    \end{bmatrix}
+    \begin{bmatrix}
+        0.2\\
+        0.8
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        0.2p+0.8(1-p) \\
+        0.2(1-p)+0.8p
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        0.8-0.6p \\
+        0.2+0.6p
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+\[
+    \boxed{
+    Q_1=
+    \begin{bmatrix}
+        0.8-0.6p\\
+        0.2+0.6p
+    \end{bmatrix}
+    }
+\]
+
+\section*{Part (b): Show the Formula for \(P^{(n)}\)}
+
+Define the matrices
+\[
+    A=
+    \frac12
+    \begin{bmatrix}
+        1 & 1\\
+        1 & 1
+    \end{bmatrix},
+    \qquad
+    B=
+    \frac12
+    \begin{bmatrix}
+        1 & -1\\
+        -1 & 1
+    \end{bmatrix}.
+\]
+
+Then
+\[
+    A+B = I,
+    \qquad
+    A-B=
+    \begin{bmatrix}
+        0 & 1\\
+        1 & 0
+    \end{bmatrix}.
+\]
+Using these,
+\[
+\begin{aligned}
+    P
+    &=
+    \begin{bmatrix}
+        p & 1-p\\
+        1-p & p
+    \end{bmatrix} \\
+    &=
+    A + (2p-1)B.
+\end{aligned}
+\]
+
+Now use the algebraic properties:
+\[
+    A^2=A,\qquad B^2=B,\qquad AB=BA=0.
+\]
+Therefore,
+\[
+\begin{aligned}
+    P^{(n)}
+    &=
+    \left(A+(2p-1)B\right)^n \\
+    &=
+    A + (2p-1)^n B,
+\end{aligned}
+\]
+because any mixed product containing both \(A\) and \(B\) vanishes.
+
+Substitute \(A\) and \(B\):
+\[
+\begin{aligned}
+    P^{(n)}
+    &=
+    \frac12
+    \begin{bmatrix}
+        1 & 1\\
+        1 & 1
+    \end{bmatrix}
+    +
+    \frac{(2p-1)^n}{2}
+    \begin{bmatrix}
+        1 & -1\\
+        -1 & 1
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        \frac12+\frac12(2p-1)^n & \frac12-\frac12(2p-1)^n \\
+        \frac12-\frac12(2p-1)^n & \frac12+\frac12(2p-1)^n
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+\[
+    \boxed{
+    P^{(n)}
+    =
+    \begin{bmatrix}
+        \frac12+\frac12(2p-1)^n & \frac12-\frac12(2p-1)^n \\
+        \frac12-\frac12(2p-1)^n & \frac12+\frac12(2p-1)^n
+    \end{bmatrix}
+    }
+\]
+
+\section*{Part (c): Find the Limiting Probabilities}
+
+If
+\[
+    0<p<1,
+\]
+then
+\[
+    |2p-1|<1.
+\]
+Hence
+\[
+    \lim_{n\to\infty}(2p-1)^n = 0.
+\]
+So from part (b),
+\[
+    \lim_{n\to\infty}P^{(n)}
+    =
+    \begin{bmatrix}
+        \frac12 & \frac12\\
+        \frac12 & \frac12
+    \end{bmatrix}.
+\]
+
+Therefore, for any initial distribution \(Q_0\),
+\[
+    \lim_{n\to\infty} Q_n
+    =
+    \lim_{n\to\infty} P^{(n)}Q_0
+    =
+    \begin{bmatrix}
+        \frac12\\
+        \frac12
+    \end{bmatrix}.
+\]
+
+Thus the limiting probabilities are
+\[
+    \boxed{
+    \mu=
+    \begin{bmatrix}
+        \frac12\\
+        \frac12
+    \end{bmatrix}
+    \qquad (0<p<1)
+    }.
+\]
+
+\subsection*{Special cases}
+
+\begin{itemize}
+    \item If \(p=1\), then
+    \[
+        P=I,
+    \]
+    so the chain never changes state, and the limit depends on the initial
+    distribution:
+    \[
+        Q_n=Q_0.
+    \]
+    \item If \(p=0\), then
+    \[
+        P=
+        \begin{bmatrix}
+            0 & 1\\
+            1 & 0
+        \end{bmatrix},
+    \]
+    which swaps the states every step. The sequence oscillates, so the limit does
+    not exist.
+\end{itemize}
+
+\section*{Part (d): Find \(\lim_{n\to\infty}P^{(n)}\)}
+
+From part (b), for \(0<p<1\),
+\[
+    \boxed{
+    \lim_{n\to\infty}P^{(n)}
+    =
+    \begin{bmatrix}
+        \frac12 & \frac12\\
+        \frac12 & \frac12
+    \end{bmatrix}
+    }.
+\]
+
+For the boundary cases:
+\begin{itemize}
+    \item \(p=1\): \(P^{(n)}=I\), so
+    \[
+        \lim_{n\to\infty}P^{(n)}=I.
+    \]
+    \item \(p=0\): \(P^{(n)}\) alternates between \(I\) and
+    \(\begin{bmatrix}0&1\\1&0\end{bmatrix}\), so the limit does not exist.
+\end{itemize}
+
+\section*{Final Answer}
+
+\[
+    \boxed{
+    Q_1=
+    \begin{bmatrix}
+        0.8-0.6p\\
+        0.2+0.6p
+    \end{bmatrix}
+    }
+\]
+
+\[
+    \boxed{
+    P^{(n)}
+    =
+    \begin{bmatrix}
+        \frac12+\frac12(2p-1)^n & \frac12-\frac12(2p-1)^n \\
+        \frac12-\frac12(2p-1)^n & \frac12+\frac12(2p-1)^n
+    \end{bmatrix}
+    }
+\]
+
+For \(0<p<1\),
+\[
+    \boxed{
+    \lim_{n\to\infty}Q_n
+    =
+    \begin{bmatrix}
+        \frac12\\
+        \frac12
+    \end{bmatrix},
+    \qquad
+    \lim_{n\to\infty}P^{(n)}
+    =
+    \begin{bmatrix}
+        \frac12 & \frac12\\
+        \frac12 & \frac12
+    \end{bmatrix}
+    }.
+\]
+
+\section*{Exam Notes}
+
+\begin{itemize}
+    \item This chain is symmetric, so the stationary distribution is uniform:
+    \[
+        \mu=\left[\frac12,\frac12\right]^T.
+    \]
+    \item The value \((2p-1)\) controls the speed of convergence. The closer
+    \(|2p-1|\) is to \(1\), the slower the convergence.
+    \item The special cases matter:
+    \(p=1\) gives no movement, while \(p=0\) gives perfect alternation.
+\end{itemize}
+
+\end{document}

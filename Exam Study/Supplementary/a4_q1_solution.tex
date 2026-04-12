@@ -1,0 +1,398 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 4, Question 1}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question Summary}
+
+The network is a simple recurrent neural network with:
+\begin{itemize}
+    \item two input neurons,
+    \item three hidden ReLU neurons,
+    \item two output ReLU neurons,
+    \item all bias terms equal to \(0.1\).
+\end{itemize}
+
+Given
+\[
+    x_t = \begin{bmatrix}1 \\ 0.5\end{bmatrix},
+    \qquad
+    h_{t-1} = \begin{bmatrix}0.05 \\ 0.2 \\ 0.15\end{bmatrix},
+\]
+the question asks for:
+\begin{enumerate}[label=(\alph*)]
+    \item the output \(y_t\),
+    \item the \(\delta\) value for each neuron when the target is
+    \(\begin{bmatrix}0 \\ 1\end{bmatrix}\).
+\end{enumerate}
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 4 slides, Forward Propagation Generalization:} each
+    layer computes an affine transformation followed by an activation.
+    \item \textbf{Chapter 4 slides, Hidden Units:} ReLU is
+    \[
+        g(z)=\max(0,z).
+    \]
+    \item \textbf{Chapter 4 slides, Chain Rule and Backward Propagation:}
+    gradients propagate backward through the network using the chain rule.
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning}:}
+    feedforward layers use affine transformations plus activations, while recurrent
+    networks extend this by feeding a previous hidden state into the current hidden
+    update. ReLU units remain elementwise \(g(z)=\max(0,z)\).
+\end{itemize}
+
+\section*{Given Parameters}
+
+Bias vectors:
+\[
+    b_h=\begin{bmatrix}0.1\\0.1\\0.1\end{bmatrix},
+    \qquad
+    b_y=\begin{bmatrix}0.1\\0.1\end{bmatrix}.
+\]
+
+Weight matrices:
+\[
+    W_{xh}
+    =
+    \begin{bmatrix}
+        -0.07 & 0.05 \\
+        -0.04 & 0.10 \\
+        -0.05 & -0.05
+    \end{bmatrix},
+\]
+\[
+    W_{hh}
+    =
+    \begin{bmatrix}
+        -0.22 & -0.10 & 0.05 \\
+        -0.04 & -0.09 & -0.06 \\
+        -0.09 & 0 & -0.08
+    \end{bmatrix},
+\]
+\[
+    W_{hy}
+    =
+    \begin{bmatrix}
+        0.06 & -0.01 & -0.18 \\
+        -0.06 & 0.13 & 0.14
+    \end{bmatrix}.
+\]
+
+\section*{Step-by-Step Solution}
+
+\subsection*{Part (a): Compute \(y_t\)}
+
+For one recurrent step, the hidden pre-activation is
+\[
+    z_h = W_{xh}x_t + W_{hh}h_{t-1} + b_h.
+\]
+
+\subsubsection*{1. Compute \(W_{xh}x_t\)}
+
+\[
+\begin{aligned}
+    W_{xh}x_t
+    &=
+    \begin{bmatrix}
+        -0.07 & 0.05 \\
+        -0.04 & 0.10 \\
+        -0.05 & -0.05
+    \end{bmatrix}
+    \begin{bmatrix}1 \\ 0.5\end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        -0.07(1)+0.05(0.5) \\
+        -0.04(1)+0.10(0.5) \\
+        -0.05(1)-0.05(0.5)
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        -0.045 \\
+        0.010 \\
+        -0.075
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+\subsubsection*{2. Compute \(W_{hh}h_{t-1}\)}
+
+\[
+\begin{aligned}
+    W_{hh}h_{t-1}
+    &=
+    \begin{bmatrix}
+        -0.22 & -0.10 & 0.05 \\
+        -0.04 & -0.09 & -0.06 \\
+        -0.09 & 0 & -0.08
+    \end{bmatrix}
+    \begin{bmatrix}
+        0.05 \\ 0.2 \\ 0.15
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        -0.22(0.05)-0.10(0.2)+0.05(0.15) \\
+        -0.04(0.05)-0.09(0.2)-0.06(0.15) \\
+        -0.09(0.05)+0(0.2)-0.08(0.15)
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        -0.0235 \\
+        -0.0290 \\
+        -0.0165
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+\subsubsection*{3. Add the bias and apply ReLU}
+
+\[
+\begin{aligned}
+    z_h
+    &=
+    \begin{bmatrix}
+        -0.045 \\
+        0.010 \\
+        -0.075
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        -0.0235 \\
+        -0.0290 \\
+        -0.0165
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        0.1 \\
+        0.1 \\
+        0.1
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        0.0315 \\
+        0.0810 \\
+        0.0085
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+Since all entries are positive,
+\[
+    h_t = \operatorname{ReLU}(z_h)
+    =
+    \begin{bmatrix}
+        0.0315 \\
+        0.0810 \\
+        0.0085
+    \end{bmatrix}.
+\]
+
+\subsubsection*{4. Compute the output layer}
+
+The output pre-activation is
+\[
+    z_y = W_{hy}h_t + b_y.
+\]
+
+\[
+\begin{aligned}
+    z_y
+    &=
+    \begin{bmatrix}
+        0.06 & -0.01 & -0.18 \\
+        -0.06 & 0.13 & 0.14
+    \end{bmatrix}
+    \begin{bmatrix}
+        0.0315 \\
+        0.0810 \\
+        0.0085
+    \end{bmatrix}
+    +
+    \begin{bmatrix}
+        0.1 \\
+        0.1
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        0.09955 \\
+        0.10983
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+Again, both entries are positive, so ReLU leaves them unchanged:
+\[
+    y_t = \operatorname{ReLU}(z_y)
+    =
+    \begin{bmatrix}
+        0.09955 \\
+        0.10983
+    \end{bmatrix}.
+\]
+
+\[
+    \boxed{
+    y_t=
+    \begin{bmatrix}
+        0.09955 \\
+        0.10983
+    \end{bmatrix}
+    }
+\]
+
+\subsection*{Part (b): Compute the \(\delta\) values}
+
+Let the target be
+\[
+    t=
+    \begin{bmatrix}
+        0 \\
+        1
+    \end{bmatrix}.
+\]
+
+Use the same convention as earlier assignments:
+\[
+    \delta_j = \frac{\partial E}{\partial z_j}.
+\]
+
+Since every hidden and output pre-activation is positive, all ReLU derivatives are
+\[
+    \operatorname{ReLU}'(z)=1.
+\]
+
+\subsubsection*{1. Output-layer deltas}
+
+For each output neuron,
+\[
+    \delta = (y-t)\odot \operatorname{ReLU}'(z_y).
+\]
+Therefore,
+\[
+    \delta_y
+    =
+    \begin{bmatrix}
+        0.09955-0 \\
+        0.10983-1
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        0.09955 \\
+        -0.89017
+    \end{bmatrix}.
+\]
+
+So the two output-neuron deltas are
+\[
+    \boxed{
+    \delta_6=0.09955,\qquad
+    \delta_7=-0.89017
+    }.
+\]
+
+\subsubsection*{2. Hidden-layer deltas}
+
+The hidden deltas at time \(t\) are
+\[
+    \delta_h
+    =
+    \left(W_{hy}^T\delta_y\right)\odot \operatorname{ReLU}'(z_h).
+\]
+
+First compute \(W_{hy}^T\delta_y\):
+\[
+\begin{aligned}
+    W_{hy}^T\delta_y
+    &=
+    \begin{bmatrix}
+        0.06 & -0.06 \\
+        -0.01 & 0.13 \\
+        -0.18 & 0.14
+    \end{bmatrix}
+    \begin{bmatrix}
+        0.09955 \\
+        -0.89017
+    \end{bmatrix} \\
+    &=
+    \begin{bmatrix}
+        0.0593832 \\
+        -0.1167176 \\
+        -0.1425428
+    \end{bmatrix}.
+\end{aligned}
+\]
+
+Because every hidden ReLU derivative is \(1\),
+\[
+    \delta_h
+    =
+    \begin{bmatrix}
+        0.0593832 \\
+        -0.1167176 \\
+        -0.1425428
+    \end{bmatrix}.
+\]
+
+Thus the hidden-neuron deltas are
+\[
+    \boxed{
+    \delta_3=0.05938,\qquad
+    \delta_4=-0.11672,\qquad
+    \delta_5=-0.14254
+    }.
+\]
+
+\section*{Final Answer}
+
+\[
+    \boxed{
+    y_t=
+    \begin{bmatrix}
+        0.09955 \\
+        0.10983
+    \end{bmatrix}
+    }
+\]
+
+\[
+    \boxed{
+    \delta_3=0.05938,\quad
+    \delta_4=-0.11672,\quad
+    \delta_5=-0.14254,\quad
+    \delta_6=0.09955,\quad
+    \delta_7=-0.89017
+    }
+\]
+
+\section*{Exam Notes}
+
+\begin{itemize}
+    \item This is a \emph{single-time-step} recurrent calculation: \(h_{t-1}\) is
+    given, so part (a) is just the hidden-state update followed by the output-layer
+    computation.
+    \item The hidden update has the standard RNN form
+    \[
+        h_t=\phi(W_{xh}x_t+W_{hh}h_{t-1}+b_h).
+    \]
+    \item Since every pre-activation is positive, every ReLU derivative is \(1\),
+    which makes the \(\delta\) calculations especially simple.
+    \item For this question, the hidden deltas are computed from the output layer at
+    the same time step. No future-time contribution is needed because only one
+    target/output step is being evaluated here.
+\end{itemize}
+
+\end{document}

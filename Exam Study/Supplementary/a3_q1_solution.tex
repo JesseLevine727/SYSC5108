@@ -1,0 +1,230 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 3, Question 1}\\
+\vspace{0.3em}
+{\large Entropy of a Bernoulli random variable and its maximum}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 3.pdf}, Question 1
+\end{center}
+
+\section*{Question}
+
+Maximum entropy is often used to select an a priori distribution when there is very little information about the random variable. Consider the Bernoulli distribution
+\[
+p(x)=
+\begin{cases}
+p, & x=1,\\
+1-p, & x=0,\\
+0, & \text{otherwise}.
+\end{cases}
+\]
+Find its entropy $H(X)$ and prove analytically that $H(X)$ achieves its maximum when
+\[
+p=\frac{1}{2}.
+\]
+
+\section*{Step 1: Recall the entropy definition}
+
+Chapter 3 slide 47 defines entropy as the expected information carried by a random variable:
+\[
+H(X)=-\sum_x p(x)\log p(x).
+\]
+Goodfellow, Bengio, and Courville define Shannon entropy the same way in Chapter 3:
+\[
+H(X)=\mathbb{E}_{X\sim P}[I(X)]
+=-\mathbb{E}_{X\sim P}[\log P(X)].
+\]
+Unless otherwise specified, the course and textbook use natural logarithms, so the units are nats. If base-2 logarithms are used instead, the units are bits.
+
+The slide convention
+\[
+0\log 0=0
+\]
+handles impossible outcomes.
+
+\section*{Step 2: Apply the definition to a Bernoulli variable}
+
+A Bernoulli random variable has two possible outcomes:
+\[
+P(X=1)=p,\qquad P(X=0)=1-p.
+\]
+So the entropy is
+\[
+H(X)
+=-\left[P(X=1)\log P(X=1)+P(X=0)\log P(X=0)\right].
+\]
+Substitute the probabilities:
+\[
+\boxed{
+H(X)=-p\log p-(1-p)\log(1-p)
+}.
+\]
+This can also be written as
+\[
+H(X)=(p-1)\log(1-p)-p\log p.
+\]
+
+\section*{Step 3: Find the critical point}
+
+Differentiate $H(p)$ with respect to $p$:
+\[
+H(p)=-p\log p-(1-p)\log(1-p).
+\]
+For the first term,
+\[
+\frac{d}{dp}\left[-p\log p\right]=-(\log p+1).
+\]
+For the second term,
+\[
+\frac{d}{dp}\left[-(1-p)\log(1-p)\right]
+=\log(1-p)+1.
+\]
+Therefore
+\[
+\frac{dH}{dp}
+=-(\log p+1)+\log(1-p)+1.
+\]
+Simplify:
+\[
+\frac{dH}{dp}
+=\log(1-p)-\log p
+=\log\left(\frac{1-p}{p}\right).
+\]
+Set the derivative equal to zero:
+\[
+\log\left(\frac{1-p}{p}\right)=0.
+\]
+Exponentiate both sides:
+\[
+\frac{1-p}{p}=1.
+\]
+So
+\[
+1-p=p.
+\]
+Hence
+\[
+\boxed{p=\frac{1}{2}.}
+\]
+
+\section*{Step 4: Prove the critical point is a maximum}
+
+Compute the second derivative:
+\[
+\frac{dH}{dp}
+=\log(1-p)-\log p.
+\]
+Differentiate again:
+\[
+\frac{d^2H}{dp^2}
+=-\frac{1}{1-p}-\frac{1}{p}.
+\]
+Combine terms:
+\[
+\frac{d^2H}{dp^2}
+=-\left(\frac{1}{1-p}+\frac{1}{p}\right).
+\]
+For $0<p<1$,
+\[
+\frac{1}{1-p}>0,\qquad \frac{1}{p}>0,
+\]
+so
+\[
+\frac{d^2H}{dp^2}<0.
+\]
+Therefore $H(p)$ is strictly concave on $(0,1)$, and the only critical point is the global maximum.
+
+At $p=\frac12$:
+\[
+H\left(\frac12\right)
+=-\frac12\log\frac12-\frac12\log\frac12.
+\]
+Since
+\[
+\log\frac12=-\log 2,
+\]
+we get
+\[
+H\left(\frac12\right)=\log 2.
+\]
+Thus the maximum entropy is
+\[
+\boxed{H_{\max}=\log 2\ \text{nats}.}
+\]
+If using base-2 logarithms, this is
+\[
+\boxed{H_{\max}=1\ \text{bit}.}
+\]
+
+\section*{Step 5: Check the boundary cases}
+
+At $p=0$:
+\[
+H(0)=-0\log 0-(1)\log(1)=0.
+\]
+At $p=1$:
+\[
+H(1)=-(1)\log(1)-0\log 0=0.
+\]
+These are deterministic cases: if $p=0$, $X$ is always $0$; if $p=1$, $X$ is always $1$. There is no uncertainty, so entropy is zero.
+
+At $p=\frac12$, both outcomes are equally likely:
+\[
+P(X=0)=P(X=1)=\frac12.
+\]
+This is the most uncertain Bernoulli distribution, so it has the maximum entropy.
+
+\section*{Step 6: Exam Interpretation}
+
+This result explains the maximum-entropy principle in the Bernoulli case. If there is no prior information favoring $X=0$ over $X=1$, choose the uniform Bernoulli distribution:
+\[
+P(X=0)=P(X=1)=\frac12.
+\]
+This is the least committed prior over the two outcomes because it has the largest entropy.
+
+A concise exam answer could be:
+\begin{quote}
+For a Bernoulli random variable,
+\[
+H(X)=-\sum_xp(x)\log p(x)=-p\log p-(1-p)\log(1-p).
+\]
+Differentiate:
+\[
+\frac{dH}{dp}=\log(1-p)-\log p
+=\log\left(\frac{1-p}{p}\right).
+\]
+Setting this to zero gives $(1-p)/p=1$, so $p=1/2$. The second derivative is
+\[
+\frac{d^2H}{dp^2}
+=-\frac{1}{1-p}-\frac{1}{p}<0
+\]
+for $0<p<1$, so this critical point is a maximum. The maximum value is
+\[
+H(1/2)=\log 2
+\]
+nats, or $1$ bit if base-2 logarithms are used.
+\end{quote}
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 3.pdf}, Question 1.
+\item Local submitted Assignment 3 PDF checked for comparison, Question 1 response.
+\item Slides: Chapter 3 slide deck, slide 47 on entropy as average information and the convention $0\log0=0$.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 3, Section 3.9.1 on the Bernoulli distribution.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 3, Section 3.13 on information theory and Shannon entropy.
+\end{itemize}
+
+\end{document}

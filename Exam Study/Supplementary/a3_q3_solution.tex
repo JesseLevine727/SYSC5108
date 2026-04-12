@@ -1,0 +1,347 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 3, Question 3}\\
+\vspace{0.3em}
+{\large Forward propagation through a small neural network}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 3.pdf}, Question 3
+\end{center}
+
+\section*{Question Summary}
+
+The assignment gives a feedforward neural network with two sensing/input neurons and three processing neurons:
+\[
+\text{inputs: neurons }1,2,\qquad
+\text{processing neurons: }3,4,5.
+\]
+The input is
+\[
+x_1=0.7,\qquad x_2=0.3.
+\]
+From the network figure and the submitted solution, the weights and biases are:
+\[
+\begin{array}{c|ccc}
+\text{Neuron} & \text{bias} & \text{weight from }x_1\text{ or }a_3 & \text{weight from }x_2\text{ or }a_4\\
+\hline
+3 & w_{3,0}=0.6 & w_{3,1}=0.1 & w_{3,2}=0.5\\
+4 & w_{4,0}=0.8 & w_{4,1}=0.2 & w_{4,2}=0.4\\
+5 & w_{5,0}=0.9 & w_{5,3}=0.3 & w_{5,4}=0.7
+\end{array}
+\]
+
+The question asks for:
+\begin{itemize}
+\item the output of neuron 5 if all processing neurons use logistic activation,
+\item the output of neuron 5 if all processing neurons use ReLU activation,
+\item the matrix form for the ReLU case.
+\end{itemize}
+
+\section*{Step 1: Recall the Forward Propagation Rule}
+
+For each processing neuron, first compute the weighted sum:
+\[
+z_j=w_{j,0}+\sum_i w_{j,i}a_i.
+\]
+Then apply the activation function:
+\[
+a_j=\phi(z_j).
+\]
+
+Chapter 4 slides on deep feedforward networks use the same idea: each layer applies a linear transformation followed by a nonlinear activation. Goodfellow, Bengio, and Courville describe a feedforward network as a composition of layers; for a hidden layer, the standard form is a matrix multiplication plus bias followed by an activation function.
+
+The two activation functions needed here are:
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}
+\]
+for logistic activation, and
+\[
+\operatorname{ReLU}(z)=\max(0,z)
+\]
+for rectified linear activation.
+
+\section*{Step 2: Compute Hidden-Layer Weighted Sums}
+
+Neuron 3:
+\[
+z_3=w_{3,0}+w_{3,1}x_1+w_{3,2}x_2.
+\]
+Substitute:
+\[
+z_3=0.6+(0.1)(0.7)+(0.5)(0.3).
+\]
+So
+\[
+z_3=0.6+0.07+0.15=0.82.
+\]
+
+Neuron 4:
+\[
+z_4=w_{4,0}+w_{4,1}x_1+w_{4,2}x_2.
+\]
+Substitute:
+\[
+z_4=0.8+(0.2)(0.7)+(0.4)(0.3).
+\]
+So
+\[
+z_4=0.8+0.14+0.12=1.06.
+\]
+
+\section*{Part (a): Logistic Activation}
+
+With logistic activation:
+\[
+a_3=\sigma(z_3)=\sigma(0.82)
+=\frac{1}{1+e^{-0.82}}
+\approx 0.694236.
+\]
+Similarly:
+\[
+a_4=\sigma(z_4)=\sigma(1.06)
+=\frac{1}{1+e^{-1.06}}
+\approx 0.742691.
+\]
+
+Now compute the weighted sum for neuron 5:
+\[
+z_5=w_{5,0}+w_{5,3}a_3+w_{5,4}a_4.
+\]
+Substitute:
+\[
+z_5=0.9+(0.3)(0.694236)+(0.7)(0.742691).
+\]
+So
+\[
+z_5\approx 0.9+0.208271+0.519884=1.628154.
+\]
+Apply logistic activation at neuron 5:
+\[
+a_5=\sigma(z_5)=\sigma(1.628154)
+\approx 0.835917.
+\]
+Therefore:
+\[
+\boxed{a_5\approx 0.836\quad\text{for logistic activation}.}
+\]
+
+\section*{Part (b): ReLU Activation}
+
+With ReLU activation:
+\[
+a_3=\operatorname{ReLU}(0.82)=0.82,
+\qquad
+a_4=\operatorname{ReLU}(1.06)=1.06.
+\]
+Both values are unchanged because both weighted sums are positive.
+
+Now compute neuron 5:
+\[
+z_5=0.9+(0.3)(0.82)+(0.7)(1.06).
+\]
+So
+\[
+z_5=0.9+0.246+0.742=1.888.
+\]
+Apply ReLU:
+\[
+a_5=\operatorname{ReLU}(1.888)=1.888.
+\]
+Therefore:
+\[
+\boxed{a_5=1.888\quad\text{for ReLU activation}.}
+\]
+
+\section*{Part (c): Matrix Form for the ReLU Network}
+
+Write the input vector as
+\[
+x=
+\begin{bmatrix}
+0.7\\
+0.3
+\end{bmatrix}.
+\]
+For the hidden layer containing neurons 3 and 4:
+\[
+W^{(1)}=
+\begin{bmatrix}
+0.1 & 0.5\\
+0.2 & 0.4
+\end{bmatrix},
+\qquad
+b^{(1)}=
+\begin{bmatrix}
+0.6\\
+0.8
+\end{bmatrix}.
+\]
+Compute the hidden pre-activation vector:
+\[
+z^{(1)}=W^{(1)}x+b^{(1)}.
+\]
+Substitute:
+\[
+z^{(1)}
+=
+\begin{bmatrix}
+0.1 & 0.5\\
+0.2 & 0.4
+\end{bmatrix}
+\begin{bmatrix}
+0.7\\
+0.3
+\end{bmatrix}
++
+\begin{bmatrix}
+0.6\\
+0.8
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.82\\
+1.06
+\end{bmatrix}.
+\]
+Apply ReLU elementwise:
+\[
+a^{(1)}=\operatorname{ReLU}(z^{(1)})
+=
+\begin{bmatrix}
+0.82\\
+1.06
+\end{bmatrix}.
+\]
+
+For the output layer containing neuron 5:
+\[
+W^{(2)}=
+\begin{bmatrix}
+0.3 & 0.7
+\end{bmatrix},
+\qquad
+b^{(2)}=0.9.
+\]
+Compute:
+\[
+z^{(2)}=W^{(2)}a^{(1)}+b^{(2)}.
+\]
+Substitute:
+\[
+z^{(2)}
+=
+\begin{bmatrix}
+0.3 & 0.7
+\end{bmatrix}
+\begin{bmatrix}
+0.82\\
+1.06
+\end{bmatrix}
++0.9
+=1.888.
+\]
+Apply ReLU:
+\[
+a^{(2)}=\operatorname{ReLU}(1.888)=1.888.
+\]
+
+\section*{Step 3: Why the Logistic and ReLU Answers Differ}
+
+The logistic activation squashes all neuron outputs into the interval $(0,1)$. Therefore the final output in part (a) is also between 0 and 1:
+\[
+a_5\approx 0.836.
+\]
+ReLU does not squash positive values. It keeps positive weighted sums unchanged and only clips negative values to zero. Since every pre-activation here is positive, the ReLU network behaves like a sequence of affine transformations, giving the larger output:
+\[
+a_5=1.888.
+\]
+
+\section*{Concise Exam Answer}
+
+\[
+z_3=0.6+0.1(0.7)+0.5(0.3)=0.82,\qquad
+z_4=0.8+0.2(0.7)+0.4(0.3)=1.06.
+\]
+For logistic activation:
+\[
+a_3=\sigma(0.82)=0.6942,\qquad
+a_4=\sigma(1.06)=0.7427,
+\]
+\[
+z_5=0.9+0.3(0.6942)+0.7(0.7427)=1.6282,
+\qquad
+a_5=\sigma(1.6282)=0.8359.
+\]
+For ReLU activation:
+\[
+a_3=0.82,\qquad a_4=1.06,
+\]
+\[
+z_5=0.9+0.3(0.82)+0.7(1.06)=1.888,
+\qquad
+a_5=1.888.
+\]
+The ReLU matrix form is:
+\[
+z^{(1)}=
+\begin{bmatrix}
+0.1 & 0.5\\
+0.2 & 0.4
+\end{bmatrix}
+\begin{bmatrix}
+0.7\\
+0.3
+\end{bmatrix}
++
+\begin{bmatrix}
+0.6\\
+0.8
+\end{bmatrix}
+=
+\begin{bmatrix}
+0.82\\
+1.06
+\end{bmatrix},
+\]
+\[
+a^{(1)}=\operatorname{ReLU}(z^{(1)})
+=
+\begin{bmatrix}
+0.82\\
+1.06
+\end{bmatrix},
+\]
+\[
+z^{(2)}=
+\begin{bmatrix}
+0.3 & 0.7
+\end{bmatrix}
+a^{(1)}+0.9
+=1.888,
+\qquad
+a^{(2)}=1.888.
+\]
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 3.pdf}, Question 3.
+\item Local submitted Assignment 3 PDF checked for comparison, Question 3 response.
+\item Slides: Chapter 4 slide deck on deep feedforward networks, hidden layers, nonlinear activations, ReLU, and logistic sigmoid units.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 6, Section 6.1 on deep feedforward networks.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 6, discussion around feedforward network layers, matrix multiplication, activations, and ReLU units.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 3, Section 3.10 on the logistic sigmoid.
+\end{itemize}
+
+\end{document}

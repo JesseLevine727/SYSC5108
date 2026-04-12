@@ -1,0 +1,411 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 3, Question 5}\\
+\vspace{0.3em}
+{\large Forward pass and backpropagation in a 1D CNN with max pooling}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 3.pdf}, Question 5
+\end{center}
+
+\section*{Question Summary}
+
+The network is a one-dimensional convolutional neural network with:
+\begin{itemize}
+\item a shared ReLU filter applied at neurons 1, 2, 3, and 4,
+\item two max-pooling neurons 5 and 6, each pooling two neighboring activations with no overlap,
+\item one fully connected ReLU output neuron 7.
+\end{itemize}
+
+The input is
+\[
+x=[1,1,1,0,0,0].
+\]
+The shared filter has bias and weights
+\[
+w_0=0.75,\qquad w_1=1,\qquad w_2=1,\qquad w_3=-1.
+\]
+The filter width is 3 and the stride is 1.
+
+The final output neuron has
+\[
+w_{7,0}=0.1,\qquad w_{7,5}=0.2,\qquad w_{7,6}=0.5.
+\]
+All neurons use ReLU:
+\[
+\operatorname{ReLU}(z)=\max(0,z).
+\]
+The target output is
+\[
+t=1.
+\]
+
+\section*{Step 1: Relate the Problem to the Course Material}
+
+Chapter 5 slides define convolutional neural networks using three core ideas:
+\begin{itemize}
+\item \textbf{Sparse interactions}: each neuron sees only a local window of the input.
+\item \textbf{Parameter sharing}: the same filter weights are reused across different locations.
+\item \textbf{Pooling}: nearby outputs are summarized, often by max pooling.
+\end{itemize}
+
+The slides also note that each kernel creates one feature map and that pooling produces a summary statistic of nearby outputs. That is exactly what happens in this problem.
+
+\section*{Part (a): Compute the Network Output}
+
+\subsection*{1. Convolution windows}
+
+With filter width 3 and stride 1, the four windows are:
+\[
+[1,1,1],\qquad [1,1,0],\qquad [1,0,0],\qquad [0,0,0].
+\]
+
+Each convolution neuron computes
+\[
+z=w_0+w_1x_1+w_2x_2+w_3x_3,
+\qquad
+a=\operatorname{ReLU}(z).
+\]
+
+\subsection*{2. Convolution layer activations}
+
+Neuron 1 sees $[1,1,1]$:
+\[
+z_1=0.75+(1)(1)+(1)(1)+(-1)(1)=1.75.
+\]
+So
+\[
+a_1=\operatorname{ReLU}(1.75)=1.75.
+\]
+
+Neuron 2 sees $[1,1,0]$:
+\[
+z_2=0.75+(1)(1)+(1)(1)+(-1)(0)=2.75.
+\]
+So
+\[
+a_2=2.75.
+\]
+
+Neuron 3 sees $[1,0,0]$:
+\[
+z_3=0.75+(1)(1)+(1)(0)+(-1)(0)=1.75.
+\]
+So
+\[
+a_3=1.75.
+\]
+
+Neuron 4 sees $[0,0,0]$:
+\[
+z_4=0.75+(1)(0)+(1)(0)+(-1)(0)=0.75.
+\]
+So
+\[
+a_4=0.75.
+\]
+
+Therefore the feature map is
+\[
+[a_1,a_2,a_3,a_4]=[1.75,2.75,1.75,0.75].
+\]
+
+\subsection*{3. Max-pooling layer}
+
+Neuron 5 pools neurons 1 and 2:
+\[
+a_5=\max(1.75,2.75)=2.75.
+\]
+
+Neuron 6 pools neurons 3 and 4:
+\[
+a_6=\max(1.75,0.75)=1.75.
+\]
+
+\subsection*{4. Output neuron}
+
+Neuron 7 computes
+\[
+z_7=w_{7,0}+w_{7,5}a_5+w_{7,6}a_6.
+\]
+Substitute:
+\[
+z_7=0.1+(0.2)(2.75)+(0.5)(1.75).
+\]
+So
+\[
+z_7=0.1+0.55+0.875=1.525.
+\]
+Apply ReLU:
+\[
+a_7=\operatorname{ReLU}(1.525)=1.525.
+\]
+Therefore the network output is
+\[
+\boxed{1.525.}
+\]
+
+\section*{Part (b): Compute the Delta Values}
+
+Use squared error:
+\[
+E=\frac12(y-t)^2,
+\qquad y=a_7.
+\]
+Since
+\[
+y=1.525,\qquad t=1,
+\]
+the output error signal is
+\[
+\delta_7=\frac{\partial E}{\partial z_7}
+=(y-t)\operatorname{ReLU}'(z_7).
+\]
+Because $z_7=1.525>0$,
+\[
+\operatorname{ReLU}'(z_7)=1.
+\]
+So
+\[
+\delta_7=(1.525-1)(1)=0.525.
+\]
+
+\subsection*{1. Backpropagate to pooling neurons}
+
+Neuron 5 connects to neuron 7 with weight $w_{7,5}=0.2$, so
+\[
+\delta_5=w_{7,5}\delta_7=(0.2)(0.525)=0.105.
+\]
+
+Neuron 6 connects to neuron 7 with weight $w_{7,6}=0.5$, so
+\[
+\delta_6=w_{7,6}\delta_7=(0.5)(0.525)=0.2625.
+\]
+
+\subsection*{2. Route max-pooling gradients}
+
+Max pooling sends the gradient only to the selected maximum.
+
+Neuron 5 chose neuron 2 because
+\[
+\max(a_1,a_2)=\max(1.75,2.75)=a_2.
+\]
+Therefore
+\[
+\delta_2=0.105,\qquad \delta_1=0.
+\]
+
+Neuron 6 chose neuron 3 because
+\[
+\max(a_3,a_4)=\max(1.75,0.75)=a_3.
+\]
+Therefore
+\[
+\delta_3=0.2625,\qquad \delta_4=0.
+\]
+
+\subsection*{3. ReLU derivatives at convolution neurons}
+
+All convolution pre-activations are positive:
+\[
+z_1=1.75,\quad z_2=2.75,\quad z_3=1.75,\quad z_4=0.75.
+\]
+So every ReLU derivative is 1, and the deltas stay unchanged.
+
+Hence the full set of deltas is
+\[
+\boxed{
+\delta_1=0,\quad
+\delta_2=0.105,\quad
+\delta_3=0.2625,\quad
+\delta_4=0,\quad
+\delta_5=0.105,\quad
+\delta_6=0.2625,\quad
+\delta_7=0.525.
+}
+\]
+
+\section*{Part (c): Calculate the Shared Filter Weight Updates}
+
+Because the filter is shared, the gradient for each filter parameter is the sum of its contribution from all four convolution neurons.
+
+\subsection*{1. Bias term \(w_0\)}
+
+Each convolution neuron uses the same bias weight, so
+\[
+\frac{\partial E}{\partial w_0}
+=
+\delta_1+\delta_2+\delta_3+\delta_4.
+\]
+Substitute:
+\[
+\frac{\partial E}{\partial w_0}
+=0+0.105+0.2625+0=0.3675.
+\]
+
+\subsection*{2. Weight \(w_1\)}
+
+\(w_1\) multiplies the first entry of each window. The first entries are
+\[
+1,\ 1,\ 1,\ 0.
+\]
+So
+\[
+\frac{\partial E}{\partial w_1}
+=
+\delta_1(1)+\delta_2(1)+\delta_3(1)+\delta_4(0).
+\]
+Thus
+\[
+\frac{\partial E}{\partial w_1}
+=0+0.105+0.2625+0=0.3675.
+\]
+
+\subsection*{3. Weight \(w_2\)}
+
+\(w_2\) multiplies the second entry of each window. Those entries are
+\[
+1,\ 1,\ 0,\ 0.
+\]
+So
+\[
+\frac{\partial E}{\partial w_2}
+=
+\delta_1(1)+\delta_2(1)+\delta_3(0)+\delta_4(0).
+\]
+Thus
+\[
+\frac{\partial E}{\partial w_2}=0+0.105+0+0=0.105.
+\]
+
+\subsection*{4. Weight \(w_3\)}
+
+\(w_3\) multiplies the third entry of each window. Those entries are
+\[
+1,\ 0,\ 0,\ 0.
+\]
+So
+\[
+\frac{\partial E}{\partial w_3}
+=
+\delta_1(1)+\delta_2(0)+\delta_3(0)+\delta_4(0).
+\]
+Thus
+\[
+\frac{\partial E}{\partial w_3}=0.
+\]
+
+Therefore the shared-filter gradients are
+\[
+\boxed{
+\frac{\partial E}{\partial w_0}=0.3675,\qquad
+\frac{\partial E}{\partial w_1}=0.3675,\qquad
+\frac{\partial E}{\partial w_2}=0.105,\qquad
+\frac{\partial E}{\partial w_3}=0.
+}
+\]
+
+If the learning rate is \(\alpha\), then gradient descent gives
+\[
+\Delta w_0=-\alpha(0.3675),\qquad
+\Delta w_1=-\alpha(0.3675),\qquad
+\Delta w_2=-\alpha(0.105),\qquad
+\Delta w_3=0.
+\]
+Equivalently,
+\[
+w_0^{\text{new}}=w_0-\alpha(0.3675),\quad
+w_1^{\text{new}}=w_1-\alpha(0.3675),\quad
+w_2^{\text{new}}=w_2-\alpha(0.105),\quad
+w_3^{\text{new}}=w_3.
+\]
+
+\section*{Why This Problem Matters}
+
+This question captures three CNN ideas that are easy to miss on an exam:
+\begin{itemize}
+\item \textbf{Convolution reuses one filter} at multiple positions, so gradients for shared weights must be added across all positions.
+\item \textbf{Max pooling is not linear}. During backpropagation, only the input that achieved the maximum receives the upstream gradient.
+\item \textbf{ReLU derivatives are simple}. If the pre-activation is positive, the derivative is 1; otherwise it is 0.
+\end{itemize}
+
+\section*{Concise Exam Answer}
+
+Convolution windows:
+\[
+[1,1,1],\quad [1,1,0],\quad [1,0,0],\quad [0,0,0].
+\]
+Convolution outputs:
+\[
+z_1=1.75,\quad z_2=2.75,\quad z_3=1.75,\quad z_4=0.75,
+\]
+so
+\[
+a_1=1.75,\quad a_2=2.75,\quad a_3=1.75,\quad a_4=0.75.
+\]
+Pooling gives
+\[
+a_5=\max(1.75,2.75)=2.75,\qquad
+a_6=\max(1.75,0.75)=1.75.
+\]
+Output neuron:
+\[
+z_7=0.1+0.2(2.75)+0.5(1.75)=1.525,
+\qquad
+a_7=1.525.
+\]
+Thus the output is
+\[
+\boxed{1.525.}
+\]
+With target \(t=1\),
+\[
+\delta_7=(1.525-1)=0.525,
+\quad
+\delta_5=0.2(0.525)=0.105,
+\quad
+\delta_6=0.5(0.525)=0.2625.
+\]
+Pooling routes these to the maxima:
+\[
+\delta_2=0.105,\quad \delta_3=0.2625,\quad \delta_1=\delta_4=0.
+\]
+Therefore
+\[
+\boxed{
+\delta_1=0,\ \delta_2=0.105,\ \delta_3=0.2625,\ \delta_4=0,\ \delta_5=0.105,\ \delta_6=0.2625,\ \delta_7=0.525.
+}
+\]
+Shared-filter gradients:
+\[
+\boxed{
+\frac{\partial E}{\partial w_0}=0.3675,\quad
+\frac{\partial E}{\partial w_1}=0.3675,\quad
+\frac{\partial E}{\partial w_2}=0.105,\quad
+\frac{\partial E}{\partial w_3}=0.
+}
+\]
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 3.pdf}, Question 5.
+\item Local submitted Assignment 3 PDF checked for comparison, Question 5 response.
+\item Slides: Chapter 5 slide deck on convolutional neural networks, convolution, stride, pooling, feature maps, and trainable parameters.
+\item Slides: Chapter 4 slide deck on ReLU activation functions.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 6 on feedforward networks and ReLU activations.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 9 on convolution, parameter sharing, and pooling concepts.
+\end{itemize}
+
+\end{document}

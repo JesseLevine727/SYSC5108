@@ -1,0 +1,180 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 3, Question 2}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+The artificial neuron takes three inputs. For the input vector
+\[
+    \mathbf{d} = [0.2,\;0.5,\;0.7],
+\]
+calculate:
+
+\begin{enumerate}[label=(\alph*)]
+    \item the weighted sum for the neuron,
+    \item the output if the activation function \(\varphi\) is a threshold
+    activation with threshold \(\theta=1\),
+    \item the output if \(\varphi\) is the logistic function,
+    \item the output if \(\varphi\) is the rectified linear unit (ReLU) function.
+\end{enumerate}
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 4 slides, General Neural Network:} a neuron computes
+    an affine or weighted sum first, then applies a nonlinear activation function.
+    \item \textbf{Chapter 4 slides, Hidden Units:} ReLU is defined as
+    \[
+        g(z)=\max(0,z).
+    \]
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    Chapter 3:} the logistic sigmoid is
+    \[
+        \sigma(x)=\frac{1}{1+\exp(-x)}.
+    \]
+    \item \textbf{Goodfellow et al., Chapter 6:} neural-network hidden units
+    usually compute an affine transformation and then apply an activation function;
+    ReLU is defined as \(g(z)=\max(0,z)\).
+\end{itemize}
+
+\section*{Given Values From the Diagram}
+
+The bias input is
+\[
+    d_0 = 1.
+\]
+The weights are:
+\[
+    w_0 = 0.20,\qquad
+    w_1 = -0.10,\qquad
+    w_2 = 0.15,\qquad
+    w_3 = 0.05.
+\]
+The input vector gives
+\[
+    d_1=0.2,\qquad d_2=0.5,\qquad d_3=0.7.
+\]
+
+\section*{Step-by-Step Solution}
+
+\subsection*{Part (a): Weighted sum}
+
+The weighted sum is
+\[
+    z = w_0d_0+w_1d_1+w_2d_2+w_3d_3.
+\]
+Substitute the values:
+\[
+\begin{aligned}
+    z
+    &=
+    (0.20)(1)+(-0.10)(0.2)+(0.15)(0.5)+(0.05)(0.7) \\
+    &=
+    0.20-0.020+0.075+0.035 \\
+    &=
+    0.290.
+\end{aligned}
+\]
+Therefore,
+\[
+    \boxed{z=0.29}.
+\]
+
+\subsection*{Part (b): Threshold activation with \(\theta=1\)}
+
+Using a threshold activation,
+\[
+    \varphi(z)
+    =
+    \begin{cases}
+    1, & z\ge \theta, \\
+    0, & z<\theta.
+    \end{cases}
+\]
+Here,
+\[
+    z=0.29 < 1.
+\]
+Therefore,
+\[
+    \boxed{\varphi(z)=0}.
+\]
+
+\subsection*{Part (c): Logistic activation}
+
+The logistic activation is
+\[
+    \varphi(z)=\sigma(z)=\frac{1}{1+\exp(-z)}.
+\]
+Using \(z=0.29\):
+\[
+\begin{aligned}
+    \sigma(0.29)
+    &=
+    \frac{1}{1+\exp(-0.29)} \\
+    &\approx
+    0.5720.
+\end{aligned}
+\]
+Therefore,
+\[
+    \boxed{\varphi(z)\approx 0.5720}.
+\]
+
+\subsection*{Part (d): ReLU activation}
+
+The ReLU activation is
+\[
+    \varphi(z)=\max(0,z).
+\]
+Since \(z=0.29>0\),
+\[
+    \varphi(0.29)=\max(0,0.29)=0.29.
+\]
+Therefore,
+\[
+    \boxed{\varphi(z)=0.29}.
+\]
+
+\section*{Final Answer}
+
+\[
+\boxed{
+\begin{array}{c|c}
+\text{Quantity} & \text{Value} \\
+\hline
+\text{Weighted sum } z & 0.29 \\
+\text{Threshold output, } \theta=1 & 0 \\
+\text{Logistic output} & 0.5720 \\
+\text{ReLU output} & 0.29
+\end{array}
+}
+\]
+
+\section*{Exam Notes}
+
+\begin{itemize}
+    \item Do not forget the bias term \(w_0d_0=(0.20)(1)\).
+    \item The weighted sum \(z\) is computed once. Each activation function then
+    transforms the same \(z=0.29\) in a different way.
+    \item With threshold activation, compare \(z\) directly against the threshold
+    \(\theta\). Here \(0.29<1\), so the output is \(0\).
+    \item With ReLU, positive values pass through unchanged and negative values
+    are clipped to \(0\).
+\end{itemize}
+
+\end{document}
