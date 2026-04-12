@@ -1,0 +1,361 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 4, Question 8}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+Let \(X=(X_1,X_2)\) be a two-dimensional random variable with binary entries
+\[
+    X_1,X_2 \in \{0,1\}.
+\]
+The joint probabilities are
+\[
+    P(X_1,X_2)
+    =
+    \begin{bmatrix}
+        P(0,0)\\
+        P(0,1)\\
+        P(1,0)\\
+        P(1,1)
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \frac14\\[4pt]
+        \frac12\\[4pt]
+        \frac18\\[4pt]
+        \frac18
+    \end{bmatrix}.
+\]
+
+\begin{enumerate}[label=(\alph*)]
+    \item Find the distributions \(P(X_1\mid X_2)\) and \(P(X_2\mid X_1)\).
+    \item Run Gibbs sampling for \(3\) iterations starting from uniform
+    distributions for both \(X_1\) and \(X_2\) independently, using the random
+    numbers
+    \[
+        0.94,\ 0.27,\ 0.30,\ 0.18,\ 0.75,\ 0.35,\ 0.61,\ 0.42,\ldots
+    \]
+\end{enumerate}
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 7 slides, Gibbs Sampling:} repeatedly sample one
+    variable from its conditional distribution given the other variables.
+    \item \textbf{Chapter 7 slides, Sampling for Structured Models:} Gibbs
+    sampling uses conditional distributions \(p(x_j\mid x_{-j})\).
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    Chapter 17:} Markov chain Monte Carlo updates the state by repeated sampling
+    from conditional distributions.
+\end{itemize}
+
+\section*{Step 1: Write the Joint Table Clearly}
+
+The lexicographic ordering means
+\[
+    P(0,0)=\frac14,\qquad
+    P(0,1)=\frac12,\qquad
+    P(1,0)=\frac18,\qquad
+    P(1,1)=\frac18.
+\]
+
+So the joint table is
+\[
+\begin{array}{c|cc}
+    & X_2=0 & X_2=1\\
+    \hline
+    X_1=0 & \frac14 & \frac12\\[4pt]
+    X_1=1 & \frac18 & \frac18
+\end{array}
+\]
+
+\section*{Part (a): Find \(P(X_1\mid X_2)\) and \(P(X_2\mid X_1)\)}
+
+\subsection*{Step 2: Compute the Marginals}
+
+For \(X_2\),
+\[
+    P(X_2=0)=P(0,0)+P(1,0)=\frac14+\frac18=\frac38,
+\]
+\[
+    P(X_2=1)=P(0,1)+P(1,1)=\frac12+\frac18=\frac58.
+\]
+
+For \(X_1\),
+\[
+    P(X_1=0)=P(0,0)+P(0,1)=\frac14+\frac12=\frac34,
+\]
+\[
+    P(X_1=1)=P(1,0)+P(1,1)=\frac18+\frac18=\frac14.
+\]
+
+\subsection*{Step 3: Compute \(P(X_1\mid X_2)\)}
+
+When \(X_2=0\),
+\[
+    P(X_1=0\mid X_2=0)=\frac{P(0,0)}{P(X_2=0)}=\frac{\frac14}{\frac38}=\frac23,
+\]
+\[
+    P(X_1=1\mid X_2=0)=\frac{P(1,0)}{P(X_2=0)}=\frac{\frac18}{\frac38}=\frac13.
+\]
+Hence
+\[
+    P(X_1\mid X_2=0)
+    =
+    \begin{bmatrix}
+        \frac23\\[4pt]
+        \frac13
+    \end{bmatrix}.
+\]
+
+When \(X_2=1\),
+\[
+    P(X_1=0\mid X_2=1)=\frac{P(0,1)}{P(X_2=1)}=\frac{\frac12}{\frac58}=\frac45,
+\]
+\[
+    P(X_1=1\mid X_2=1)=\frac{P(1,1)}{P(X_2=1)}=\frac{\frac18}{\frac58}=\frac15.
+\]
+Hence
+\[
+    P(X_1\mid X_2=1)
+    =
+    \begin{bmatrix}
+        \frac45\\[4pt]
+        \frac15
+    \end{bmatrix}.
+\]
+
+\subsection*{Step 4: Compute \(P(X_2\mid X_1)\)}
+
+When \(X_1=0\),
+\[
+    P(X_2=0\mid X_1=0)=\frac{P(0,0)}{P(X_1=0)}=\frac{\frac14}{\frac34}=\frac13,
+\]
+\[
+    P(X_2=1\mid X_1=0)=\frac{P(0,1)}{P(X_1=0)}=\frac{\frac12}{\frac34}=\frac23.
+\]
+Hence
+\[
+    P(X_2\mid X_1=0)
+    =
+    \begin{bmatrix}
+        \frac13\\[4pt]
+        \frac23
+    \end{bmatrix}.
+\]
+
+When \(X_1=1\),
+\[
+    P(X_2=0\mid X_1=1)=\frac{P(1,0)}{P(X_1=1)}=\frac{\frac18}{\frac14}=\frac12,
+\]
+\[
+    P(X_2=1\mid X_1=1)=\frac{P(1,1)}{P(X_1=1)}=\frac{\frac18}{\frac14}=\frac12.
+\]
+Hence
+\[
+    P(X_2\mid X_1=1)
+    =
+    \begin{bmatrix}
+        \frac12\\[4pt]
+        \frac12
+    \end{bmatrix}.
+\]
+
+\subsection*{Answer for Part (a)}
+
+\[
+    \boxed{
+    P(X_1\mid X_2=0)=
+    \begin{bmatrix}
+        \frac23\\[4pt]
+        \frac13
+    \end{bmatrix},
+    \qquad
+    P(X_1\mid X_2=1)=
+    \begin{bmatrix}
+        \frac45\\[4pt]
+        \frac15
+    \end{bmatrix}
+    }
+\]
+
+\[
+    \boxed{
+    P(X_2\mid X_1=0)=
+    \begin{bmatrix}
+        \frac13\\[4pt]
+        \frac23
+    \end{bmatrix},
+    \qquad
+    P(X_2\mid X_1=1)=
+    \begin{bmatrix}
+        \frac12\\[4pt]
+        \frac12
+    \end{bmatrix}
+    }
+\]
+
+\section*{Part (b): Gibbs Sampling for 3 Iterations}
+
+\subsection*{Step 5: Initialization from Independent Uniform Distributions}
+
+The question says to start with uniform distributions for \(X_1\) and \(X_2\)
+independently. For a binary variable, that means
+\[
+    P(X_j=0)=P(X_j=1)=\frac12.
+\]
+
+Using the first two random numbers:
+\begin{itemize}
+    \item \(r_1=0.94\). Since \(0.94>0.5\), take
+    \[
+        X_1^{(0)}=1.
+    \]
+    \item \(r_2=0.27\). Since \(0.27\le 0.5\), take
+    \[
+        X_2^{(0)}=0.
+    \]
+\end{itemize}
+
+So the initial state is
+\[
+    (X_1^{(0)},X_2^{(0)})=(1,0).
+\]
+
+\subsection*{Step 6: Iteration 1}
+
+Sample \(X_1^{(1)}\) from \(P(X_1\mid X_2=0)\):
+\[
+    P(X_1=0\mid X_2=0)=\frac23.
+\]
+Use \(r_3=0.30\). Since \(0.30\le \frac23\),
+\[
+    X_1^{(1)}=0.
+\]
+
+Now sample \(X_2^{(1)}\) from \(P(X_2\mid X_1=0)\):
+\[
+    P(X_2=0\mid X_1=0)=\frac13.
+\]
+Use \(r_4=0.18\). Since \(0.18\le \frac13\),
+\[
+    X_2^{(1)}=0.
+\]
+
+So
+\[
+    (X_1^{(1)},X_2^{(1)})=(0,0).
+\]
+
+\subsection*{Step 7: Iteration 2}
+
+Sample \(X_1^{(2)}\) from \(P(X_1\mid X_2=0)\):
+\[
+    P(X_1=0\mid X_2=0)=\frac23.
+\]
+Use \(r_5=0.75\). Since \(0.75>\frac23\),
+\[
+    X_1^{(2)}=1.
+\]
+
+Now sample \(X_2^{(2)}\) from \(P(X_2\mid X_1=1)\):
+\[
+    P(X_2=0\mid X_1=1)=\frac12.
+\]
+Use \(r_6=0.35\). Since \(0.35\le \frac12\),
+\[
+    X_2^{(2)}=0.
+\]
+
+So
+\[
+    (X_1^{(2)},X_2^{(2)})=(1,0).
+\]
+
+\subsection*{Step 8: Iteration 3}
+
+Sample \(X_1^{(3)}\) from \(P(X_1\mid X_2=0)\):
+\[
+    P(X_1=0\mid X_2=0)=\frac23.
+\]
+Use \(r_7=0.61\). Since \(0.61\le \frac23\),
+\[
+    X_1^{(3)}=0.
+\]
+
+Now sample \(X_2^{(3)}\) from \(P(X_2\mid X_1=0)\):
+\[
+    P(X_2=0\mid X_1=0)=\frac13.
+\]
+Use \(r_8=0.42\). Since \(0.42>\frac13\),
+\[
+    X_2^{(3)}=1.
+\]
+
+So
+\[
+    (X_1^{(3)},X_2^{(3)})=(0,1).
+\]
+
+\subsection*{Answer for Part (b)}
+
+The Gibbs samples are
+\[
+    \boxed{
+    (X_1^{(0)},X_2^{(0)})=(1,0),\quad
+    (X_1^{(1)},X_2^{(1)})=(0,0),\quad
+    (X_1^{(2)},X_2^{(2)})=(1,0),\quad
+    (X_1^{(3)},X_2^{(3)})=(0,1).
+    }
+\]
+
+\section*{Why the Procedure Works}
+
+Gibbs sampling does not sample from the full joint distribution directly. Instead,
+it alternates:
+\begin{itemize}
+    \item sample \(X_1\) from \(P(X_1\mid X_2)\),
+    \item then sample \(X_2\) from \(P(X_2\mid X_1)\).
+\end{itemize}
+
+These conditional updates define a Markov chain whose limiting distribution is
+the target joint distribution.
+
+\section*{Exam Shortcut}
+
+For a small Gibbs-sampling question:
+\begin{enumerate}[label=\arabic*.]
+    \item Write the joint table clearly.
+    \item Compute marginals.
+    \item Compute the conditional tables once.
+    \item Use the random numbers in order, comparing each one with the relevant
+    cumulative probability.
+\end{enumerate}
+
+For binary variables, each update is just a threshold test.
+
+\section*{Sources Used}
+
+\begin{itemize}
+    \item Assignment 4 PDF, Question 8.
+    \item Local submitted Assignment 4 PDF checked for consistency of the conditionals and sample path.
+    \item Chapter 7 slides on Gibbs sampling and conditional sampling.
+    \item Goodfellow, Bengio, and Courville, \emph{Deep Learning}, Chapter 17 on MCMC and repeated conditional updates.
+\end{itemize}
+
+\end{document}

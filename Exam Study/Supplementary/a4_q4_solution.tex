@@ -1,0 +1,206 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 4, Question 4}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+In the grid world example, rewards are positive for the gold state, negative for
+traps, and zero for all other states. Are the absolute values of these rewards
+important, or only the intervals between them? Prove that adding a constant
+\(c\) to all rewards adds a constant, \(v_c\), to the values of all states, and
+thus does not affect the relative values of any states under any policy. What is
+\(v_c\) in terms of \(c\) and \(\gamma\)?
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 6 slides, Reward and Return:} the discounted return is
+    defined as
+    \[
+        G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots.
+    \]
+    \item \textbf{Chapter 6 slides, Value Function and Bellman Equation:} a
+    state value is the expected discounted return under a policy.
+    \item \textbf{Chapter 6 slides, Grid World example:} the state ranking comes
+    from comparing values, not from the raw reward labels alone.
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    reinforcement-learning discussion:} a policy is evaluated through expected
+    reward/return, so changing every reward by the same additive offset shifts the
+    return baseline uniformly.
+\end{itemize}
+
+\section*{What the Question Is Really Asking}
+
+The question is about whether a \emph{uniform reward shift}
+\[
+    R'_{t+1} = R_{t+1} + c
+\]
+changes which states are better or worse under a fixed policy \(\pi\).
+
+The answer is:
+\begin{itemize}
+    \item the \emph{absolute numerical labels} of the rewards are not what matter,
+    \item what matters for comparing states is their \emph{relative difference in
+    value},
+    \item adding the same constant \(c\) to every reward shifts every state value
+    by the same constant,
+    \item so the ordering of states does not change.
+\end{itemize}
+
+\section*{Step 1: Start from the Definition of Value}
+
+Under policy \(\pi\), the state-value function is
+\[
+    v_\pi(s) = \mathbb{E}_\pi[G_t \mid S_t = s],
+\]
+where the discounted return is
+\[
+    G_t = \sum_{k=0}^{\infty} \gamma^k R_{t+k+1}.
+\]
+
+Now define the shifted rewards:
+\[
+    R'_{t+1} = R_{t+1} + c.
+\]
+Then the new return is
+\[
+    G'_t = \sum_{k=0}^{\infty} \gamma^k R'_{t+k+1}.
+\]
+
+\section*{Step 2: Expand the New Return}
+
+Substitute \(R'_{t+k+1} = R_{t+k+1} + c\):
+\[
+\begin{aligned}
+    G'_t
+    &= \sum_{k=0}^{\infty} \gamma^k (R_{t+k+1} + c) \\
+    &= \sum_{k=0}^{\infty} \gamma^k R_{t+k+1}
+     + \sum_{k=0}^{\infty} \gamma^k c \\
+    &= G_t + c \sum_{k=0}^{\infty} \gamma^k.
+\end{aligned}
+\]
+
+For \(0 \le \gamma < 1\), the geometric series is
+\[
+    \sum_{k=0}^{\infty} \gamma^k = \frac{1}{1-\gamma}.
+\]
+Therefore,
+\[
+    G'_t = G_t + \frac{c}{1-\gamma}.
+\]
+
+\section*{Step 3: Convert the Return Shift into a Value Shift}
+
+Take expectation under the same policy \(\pi\):
+\[
+\begin{aligned}
+    v'_\pi(s)
+    &= \mathbb{E}_\pi[G'_t \mid S_t = s] \\
+    &= \mathbb{E}_\pi\left[G_t + \frac{c}{1-\gamma}\,\middle|\,S_t=s\right] \\
+    &= \mathbb{E}_\pi[G_t \mid S_t=s] + \frac{c}{1-\gamma} \\
+    &= v_\pi(s) + \frac{c}{1-\gamma}.
+\end{aligned}
+\]
+
+So the constant added to every state value is
+\[
+    \boxed{v_c = \frac{c}{1-\gamma}}.
+\]
+
+\section*{Step 4: Show that Relative Values Do Not Change}
+
+Take any two states \(s_1\) and \(s_2\). Under the shifted rewards,
+\[
+\begin{aligned}
+    v'_\pi(s_1) - v'_\pi(s_2)
+    &=
+    \left(v_\pi(s_1) + \frac{c}{1-\gamma}\right)
+    -
+    \left(v_\pi(s_2) + \frac{c}{1-\gamma}\right) \\
+    &= v_\pi(s_1) - v_\pi(s_2).
+\end{aligned}
+\]
+
+So the difference between any pair of state values is unchanged. That means:
+\begin{itemize}
+    \item if \(v_\pi(s_1) > v_\pi(s_2)\) before the shift, then
+    \(v'_\pi(s_1) > v'_\pi(s_2)\) after the shift,
+    \item if two states had the same value before, they still have the same value
+    after,
+    \item the policy-induced ranking of states is unchanged.
+\end{itemize}
+
+\section*{Interpretation for Grid World}
+
+In the grid world, suppose gold has positive reward, traps have negative reward,
+and ordinary states have zero reward. If we add the same constant \(c\) to
+\emph{every} reward:
+\begin{itemize}
+    \item gold becomes ``old gold reward \(+c\),''
+    \item traps become ``old trap reward \(+c\),''
+    \item ordinary states become ``\(0+c\).''
+\end{itemize}
+
+But every trajectory receives the same extra discounted baseline
+\[
+    \frac{c}{1-\gamma},
+\]
+so every state's value shifts by exactly that same amount. Therefore the agent's
+preference between states does not change.
+
+\section*{Final Answer}
+
+Only the \emph{intervals between rewards} matter for comparing state values under
+a fixed policy, not their absolute baseline. If every reward is shifted by the
+same constant \(c\), then for any state \(s\),
+\[
+    v'_\pi(s) = v_\pi(s) + v_c,
+\]
+where
+\[
+    \boxed{v_c = \frac{c}{1-\gamma}} \qquad (0 \le \gamma < 1).
+\]
+Because the same constant is added to all states,
+\[
+    v'_\pi(s_1) - v'_\pi(s_2) = v_\pi(s_1) - v_\pi(s_2),
+\]
+so the relative values of states are unchanged under any policy.
+
+\section*{Exam Shortcut}
+
+If a question asks what happens when all rewards are replaced by \(R+c\), write:
+\[
+    G'_t = G_t + c(1+\gamma+\gamma^2+\cdots)
+         = G_t + \frac{c}{1-\gamma}.
+\]
+Then immediately conclude:
+\[
+    v'_\pi(s) = v_\pi(s) + \frac{c}{1-\gamma},
+\]
+so \textbf{state ordering does not change}.
+
+\section*{Sources Used}
+
+\begin{itemize}
+    \item Assignment 4 PDF, Question 4.
+    \item Local submitted Assignment 4 PDF checked for consistency of the core
+    result.
+    \item Chapter 6 slides on reward/return, value functions, Bellman equations,
+    and the grid world example.
+    \item Goodfellow, Bengio, and Courville, \emph{Deep Learning}, reinforcement-learning discussion on policies, rewards, and return-based evaluation.
+\end{itemize}
+
+\end{document}

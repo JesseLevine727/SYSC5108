@@ -1,0 +1,902 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\W25 Sample Final Step-by-Step Solutions}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Source Note}
+
+This study note is based on the two files in the course directory:
+\begin{itemize}
+    \item \texttt{W25\_SYSC5108\_Final.pdf}
+    \item \texttt{W25\_SYSC5108\_Final\_Solution.pdf}
+\end{itemize}
+
+The PDF filename says ``Final'', while the cover page itself says ``Midterm I''.
+I follow the file naming used in the directory and turn the provided sample exam
+and sample solution into a cleaner step-by-step study document.
+
+\section*{Question 1: Linear Regression}
+
+Training points:
+\[
+    (0,-1),\ (1,2),\ (6,4),\ (9,2)
+\]
+Test point:
+\[
+    (3,1).
+\]
+
+We fit the line
+\[
+    \hat y = \beta_0 + \beta_1 x.
+\]
+
+\subsection*{Step 1: Build the design matrix}
+
+\[
+    X =
+    \begin{bmatrix}
+        1 & 0 \\
+        1 & 1 \\
+        1 & 6 \\
+        1 & 9
+    \end{bmatrix},
+    \qquad
+    y =
+    \begin{bmatrix}
+        -1 \\ 2 \\ 4 \\ 2
+    \end{bmatrix}.
+\]
+
+\subsection*{Step 2: Use the normal equation}
+
+\[
+    \beta = (X^\top X)^{-1}X^\top y.
+\]
+
+Compute
+\[
+    X^\top X =
+    \begin{bmatrix}
+        4 & 16 \\
+        16 & 118
+    \end{bmatrix},
+    \qquad
+    X^\top y =
+    \begin{bmatrix}
+        7 \\ 44
+    \end{bmatrix}.
+\]
+
+The determinant is
+\[
+    4(118)-16(16)=216.
+\]
+
+So
+\[
+    (X^\top X)^{-1}
+    =
+    \frac{1}{216}
+    \begin{bmatrix}
+        118 & -16 \\
+        -16 & 4
+    \end{bmatrix}.
+\]
+
+Then
+\[
+    \beta
+    =
+    \frac{1}{216}
+    \begin{bmatrix}
+        118 & -16 \\
+        -16 & 4
+    \end{bmatrix}
+    \begin{bmatrix}
+        7 \\ 44
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        61/108 \\
+        8/27
+    \end{bmatrix}
+    \approx
+    \begin{bmatrix}
+        0.5648 \\
+        0.2963
+    \end{bmatrix}.
+\]
+
+Therefore the fitted model is
+\[
+    \boxed{\hat y = 0.5648 + 0.2963x.}
+\]
+
+\subsection*{Step 3: Predict the training outputs}
+
+\[
+    \hat y(0)=0.5648,\quad
+    \hat y(1)=0.8611,\quad
+    \hat y(6)=2.3426,\quad
+    \hat y(9)=3.2315.
+\]
+
+\subsection*{Step 4: Compute the training MSE}
+
+\[
+    \text{MSE}_{\text{train}}
+    =
+    \frac{1}{4}\sum_{i=1}^{4}(y_i-\hat y_i)^2.
+\]
+
+The squared errors are approximately
+\[
+    2.4481,\quad 1.2971,\quad 2.7467,\quad 1.5165.
+\]
+
+So
+\[
+    \text{MSE}_{\text{train}}
+    \approx
+    \frac{2.4481+1.2971+2.7467+1.5165}{4}
+    \approx 2.0021.
+\]
+
+Rounded for exam work:
+\[
+    \boxed{\text{MSE}_{\text{train}} \approx 2.0.}
+\]
+
+\subsection*{Step 5: Compute the test error}
+
+For the test input \(x=3\),
+\[
+    \hat y(3)=0.5648+0.2963(3)\approx 1.4537.
+\]
+
+The squared test error is
+\[
+    (1-1.4537)^2 \approx 0.2058.
+\]
+
+Since there is only one test point, its MSE is the same number:
+\[
+    \boxed{\text{MSE}_{\text{test}} \approx 0.206.}
+\]
+
+\section*{Question 2: Multiclass Logistic Regression Derivative}
+
+The exam gives
+\[
+    p(y=k\mid x,\beta)=\text{softmax}(z)_k
+    =
+    \frac{e^{z_k}}{\sum_j e^{z_j}},
+\]
+with
+\[
+    z_k = \beta_{k0} + \beta_{k1}x,
+\]
+and
+\[
+    J(\beta)
+    =
+    -\sum_{i=1}^{M}\sum_{k=1}^{K} I_k(y^{(i)})\log \text{softmax}(z^{(i)})_k.
+\]
+
+The target identity in the sample solution is
+\[
+    \nabla_{\beta_k}J(\beta_k)
+    =
+    -\sum_{i=1}^{M}\sum_{k=1}^{K}
+    I_k(y^{(i)})
+    \left(1-\text{softmax}(z^{(i)})_k\right)x^{(i)}.
+\]
+
+\subsection*{Step 1: Move the derivative inside the sum}
+
+\[
+    \nabla_{\beta_k}J(\beta_k)
+    =
+    -\sum_{i=1}^{M}\sum_{k=1}^{K}
+    I_k(y^{(i)})
+    \nabla_{\beta_k}\log \text{softmax}(z^{(i)})_k.
+\]
+
+\subsection*{Step 2: Differentiate the log}
+
+Use
+\[
+    \nabla_{\beta_k}\log \text{softmax}(z)_k
+    =
+    \frac{\nabla_{\beta_k}\text{softmax}(z)_k}{\text{softmax}(z)_k}.
+\]
+
+\subsection*{Step 3: Differentiate the softmax term}
+
+\[
+    \text{softmax}(z)_k
+    =
+    \frac{e^{z_k}}{\sum_j e^{z_j}}.
+\]
+
+Using the quotient rule and the fact that
+\[
+    \nabla_{\beta_k} z_k = x,
+\]
+we get
+\[
+    \nabla_{\beta_k}\text{softmax}(z)_k
+    =
+    x\,
+    \frac{e^{z_k}\left(\sum_j e^{z_j}\right)-e^{z_k}e^{z_k}}
+         {\left(\sum_j e^{z_j}\right)^2}.
+\]
+
+Factor out the softmax:
+\[
+    \nabla_{\beta_k}\text{softmax}(z)_k
+    =
+    x\,\text{softmax}(z)_k\left(1-\text{softmax}(z)_k\right).
+\]
+
+\subsection*{Step 4: Divide by \(\text{softmax}(z)_k\)}
+
+\[
+    \nabla_{\beta_k}\log \text{softmax}(z)_k
+    =
+    x\left(1-\text{softmax}(z)_k\right).
+\]
+
+\subsection*{Step 5: Substitute back into the loss gradient}
+
+\[
+    \nabla_{\beta_k}J(\beta_k)
+    =
+    -\sum_{i=1}^{M}\sum_{k=1}^{K}
+    I_k(y^{(i)})
+    x^{(i)}
+    \left(1-\text{softmax}(z^{(i)})_k\right).
+\]
+
+So the exam's target expression is
+\[
+    \boxed{
+    \nabla_{\beta_k}J(\beta_k)
+    =
+    -\sum_{i=1}^{M}\sum_{k=1}^{K}
+    I_k(y^{(i)})
+    \left(1-\text{softmax}(z^{(i)})_k\right)x^{(i)}
+    }.
+\]
+
+\subsection*{Study note}
+
+The sample solution differentiates the \(k\)-th softmax term with respect to the
+matching class parameter \(\beta_k\). In standard multiclass logistic regression,
+the full familiar gradient is usually written as
+\[
+    \sum_{i=1}^{M}\left(p_k^{(i)}-I_k(y^{(i)})\right)x^{(i)}.
+\]
+For exam study, it is useful to recognize both forms.
+
+\section*{Question 3: 1D CNN Backpropagation}
+
+From the figure:
+\begin{itemize}
+    \item input \(=[1,1,1,0,0,0]\),
+    \item convolution bias \(w_0=0.75\),
+    \item shared kernel weights \(w_1=+1,\ w_2=+1,\ w_3=-1\),
+    \item output-layer weights \(w_{70}=0.1,\ w_{75}=0.2,\ w_{76}=0.5\),
+    \item ReLU activations everywhere,
+    \item target output \(t=2\).
+\end{itemize}
+
+\subsection*{Step 1: Forward pass through the convolution layer}
+
+Window 1 uses \((1,1,1)\):
+\[
+    z_1 = 0.75 + 1(1) + 1(1) - 1(1) = 1.75,
+    \qquad
+    a_1=\text{ReLU}(z_1)=1.75.
+\]
+
+Window 2 uses \((1,1,0)\):
+\[
+    z_2 = 0.75 + 1(1) + 1(1) - 1(0) = 2.75,
+    \qquad
+    a_2=2.75.
+\]
+
+Window 3 uses \((1,0,0)\):
+\[
+    z_3 = 0.75 + 1(1) + 1(0) - 1(0) = 1.75,
+    \qquad
+    a_3=1.75.
+\]
+
+Window 4 uses \((0,0,0)\):
+\[
+    z_4 = 0.75,
+    \qquad
+    a_4=0.75.
+\]
+
+\subsection*{Step 2: Max pooling}
+
+\[
+    a_5 = \max(a_1,a_2)=\max(1.75,2.75)=2.75,
+\]
+\[
+    a_6 = \max(a_3,a_4)=\max(1.75,0.75)=1.75.
+\]
+
+So the winning conv units are neuron 2 for pooling unit 5 and neuron 3 for
+pooling unit 6.
+
+\subsection*{Step 3: Output neuron}
+
+\[
+    z_7 = w_{70} + w_{75}a_5 + w_{76}a_6
+    = 0.1 + 0.2(2.75) + 0.5(1.75).
+\]
+
+\[
+    z_7 = 0.1 + 0.55 + 0.875 = 1.525.
+\]
+
+Since ReLU is active,
+\[
+    a_7 = 1.525.
+\]
+
+\subsection*{Part (a): Find the \(\delta\) values}
+
+Using squared error \(L=\tfrac12(t-a_7)^2\),
+\[
+    \delta_7 = \frac{\partial L}{\partial z_7}
+    = a_7 - t = 1.525 - 2 = -0.475.
+\]
+
+Backpropagate to the pooling units:
+\[
+    \delta_5 = \delta_7 w_{75} = -0.475(0.2) = -0.095,
+\]
+\[
+    \delta_6 = \delta_7 w_{76} = -0.475(0.5) = -0.2375.
+\]
+
+Because max pooling routes the gradient only to the winning input:
+\[
+    \delta_1 = 0,\qquad
+    \delta_2 = -0.095,\qquad
+    \delta_3 = -0.2375,\qquad
+    \delta_4 = 0.
+\]
+
+Therefore
+\[
+    \boxed{
+    \delta_1=0,\ 
+    \delta_2=-0.095,\ 
+    \delta_3=-0.2375,\ 
+    \delta_4=0,\ 
+    \delta_5=-0.095,\ 
+    \delta_6=-0.2375,\ 
+    \delta_7=-0.475
+    }.
+\]
+
+\subsection*{Part (b): Weight updates for \(w_{75}\) and \(w_1\)}
+
+For the fully connected weight:
+\[
+    \frac{\partial L}{\partial w_{75}}
+    = \delta_7 a_5
+    = -0.475(2.75)
+    = -1.30625.
+\]
+
+So
+\[
+    \boxed{\frac{\partial L}{\partial w_{75}}=-1.30625\approx -1.31.}
+\]
+
+For the shared convolution weight \(w_1\), add the contributions from each
+window:
+\[
+    \frac{\partial L}{\partial w_1}
+    =
+    \delta_1 x_1 + \delta_2 x_2 + \delta_3 x_3 + \delta_4 x_4.
+\]
+
+The corresponding first inputs in the four windows are \(1,1,1,0\), so
+\[
+    \frac{\partial L}{\partial w_1}
+    =
+    0(1) + (-0.095)(1) + (-0.2375)(1) + 0(0)
+    = -0.3325.
+\]
+
+Thus
+\[
+    \boxed{\frac{\partial L}{\partial w_1}=-0.3325.}
+\]
+
+\section*{Question 4: Discounted Return}
+
+Given \(\gamma=0.9\) and reward sequence
+\[
+    R_1 = 2,\qquad R_2=R_3=\cdots = 7,
+\]
+find \(G_0\) and \(G_1\).
+
+\subsection*{Step 1: Compute \(G_1\)}
+
+\[
+    G_1 = R_2 + \gamma R_3 + \gamma^2 R_4 + \cdots
+    = 7 + 0.9(7) + 0.9^2(7) + \cdots.
+\]
+
+This is a geometric series:
+\[
+    G_1 = 7\sum_{n=0}^{\infty}0.9^n = \frac{7}{1-0.9}=70.
+\]
+
+\subsection*{Step 2: Compute \(G_0\)}
+
+\[
+    G_0 = R_1 + \gamma G_1 = 2 + 0.9(70)=2+63=65.
+\]
+
+So
+\[
+    \boxed{G_1=70,\qquad G_0=65.}
+\]
+
+\section*{Question 5: Reinforcement Learning}
+
+The environment is
+\[
+\begin{array}{ccccc}
+\toprule
+\text{State} & \text{Action} & \text{Next state} & \text{Probability} & \text{Reward} \\
+\midrule
+0 & 0 & 0 & 1 & -1 \\
+0 & 1 & 1 & 1 & 1 \\
+1 & 0 & 1 & 1 & 1 \\
+1 & 1 & 0 & 1 & -1 \\
+\bottomrule
+\end{array}
+\]
+\[
+    \gamma=0.1,
+    \qquad
+    \pi(1\mid 0)=\pi(0\mid 1)=0.6,
+    \qquad
+    \alpha=0.6.
+\]
+
+\subsection*{Part (a): Generate the trajectories}
+
+The random numbers are
+\[
+    0.94,\ 0.27,\ 0.30,\ 0.18,\ 0.75,\ 0.35.
+\]
+
+Following the same action-selection convention as the sample solution:
+\begin{itemize}
+    \item in state \(0\), choose action \(1\) with probability \(0.6\),
+    \item in state \(1\), choose action \(0\) with probability \(0.6\).
+\end{itemize}
+
+\subsubsection*{Trajectory from state 0}
+
+\begin{itemize}
+    \item \(0.94 > 0.4\), so choose action \(1\): \(0 \to 1\), reward \(1\).
+    \item \(0.27 < 0.6\), so in state \(1\) choose action \(0\): \(1 \to 1\), reward \(1\).
+    \item \(0.30 < 0.6\), so again choose action \(0\): \(1 \to 1\), reward \(1\).
+\end{itemize}
+
+Thus
+\[
+    \tau_0: 0 \to 1 \to 1 \to 1,
+    \qquad
+    r = (1,1,1).
+\]
+
+\subsubsection*{Trajectory from state 1}
+
+\begin{itemize}
+    \item \(0.18 < 0.6\), so choose action \(0\): \(1 \to 1\), reward \(1\).
+    \item \(0.75 > 0.6\), so choose action \(1\): \(1 \to 0\), reward \(-1\).
+    \item \(0.35 < 0.4\), so in state \(0\) choose action \(0\): \(0 \to 0\), reward \(-1\).
+\end{itemize}
+
+Thus
+\[
+    \tau_1: 1 \to 1 \to 0 \to 0,
+    \qquad
+    r = (1,-1,-1).
+\]
+
+\subsection*{Monte Carlo values following the provided sample solution}
+
+The sample solution updates to the following values:
+\[
+    v(0)\approx -0.156,
+    \qquad
+    v(1)\approx 0.974.
+\]
+
+For the action values:
+\[
+    q(0,0)=-1,
+    \qquad
+    q(0,1)=1+0.1(1)+0.1^2(1)=1.11,
+\]
+\[
+    q(1,0)\approx 0.974,
+    \qquad
+    q(1,1)=-1+0.1(-1)=-1.1.
+\]
+
+So the sample-final answer is
+\[
+    \boxed{
+    v(0)\approx -0.156,\quad
+    v(1)\approx 0.974
+    }
+\]
+and
+\[
+    \boxed{
+    q(0,0)=-1,\quad
+    q(0,1)=1.11,\quad
+    q(1,0)\approx 0.974,\quad
+    q(1,1)=-1.1
+    }.
+\]
+
+\subsection*{Part (b): Off-policy TD control (Q-learning)}
+
+Use
+\[
+    q(s_t,a_t)\leftarrow q(s_t,a_t)
+    + \alpha\left[r_{t+1}+\gamma\max_{a'}q(s_{t+1},a')-q(s_t,a_t)\right].
+\]
+
+Start from
+\[
+    q(s,a)=0\quad \text{for all }(s,a).
+\]
+
+\subsubsection*{Update along \(\tau_0\)}
+
+\[
+    q(0,1)=0+0.6[1+0.1(0)-0]=0.6.
+\]
+
+\[
+    q(1,0)=0+0.6[1+0.1(0)-0]=0.6.
+\]
+
+\[
+    q(1,0)=0.6+0.6[1+0.1(0.6)-0.6]
+    =0.6+0.6(0.46)=0.876.
+\]
+
+\subsubsection*{Update along \(\tau_1\)}
+
+\[
+    q(1,0)=0.876+0.6[1+0.1(0.876)-0.876]
+    \approx 1.003.
+\]
+
+\[
+    q(1,1)=0+0.6[-1+0.1(0.6)-0]=-0.564.
+\]
+
+\[
+    q(0,0)=0+0.6[-1+0.1(0.6)-0]=-0.564.
+\]
+
+Therefore
+\[
+    \boxed{
+    q(0,0)=-0.564,\quad
+    q(0,1)=0.6,\quad
+    q(1,0)\approx 1.003,\quad
+    q(1,1)=-0.564
+    }.
+\]
+
+\section*{Question 6: Bayesian Network}
+
+Variables:
+\begin{itemize}
+    \item \(S\): storm,
+    \item \(B\): burglar,
+    \item \(C\): cat,
+    \item \(A\): alarm.
+\end{itemize}
+
+\subsection*{Part (a): Directed model}
+
+The natural causal graph is
+\[
+    S \to B,\qquad S \to C,\qquad B \to A,\qquad C \to A.
+\]
+
+Reason:
+\begin{itemize}
+    \item storms affect whether burglars show up,
+    \item storms affect whether cats come inside,
+    \item burglars and cats both affect whether the alarm is triggered.
+\end{itemize}
+
+\subsection*{Part (b): Estimate the probabilities}
+
+The data table has 13 samples.
+
+\subsubsection*{1. Prior for storm}
+
+Storm is true in IDs \(10,11,12,13\), so
+\[
+    P(S=T)=\frac{4}{13}\approx 0.3077.
+\]
+
+\subsubsection*{2. Burglar given storm}
+
+When \(S=T\), only ID \(13\) has \(B=T\), so
+\[
+    P(B=T\mid S=T)=\frac{1}{4}=0.25.
+\]
+
+When \(S=F\), IDs \(7,8,9\) have \(B=T\), so
+\[
+    P(B=T\mid S=F)=\frac{3}{9}=\frac13\approx 0.3333.
+\]
+
+\subsubsection*{3. Cat given storm}
+
+When \(S=T\), IDs \(10,11,12\) have \(C=T\), so
+\[
+    P(C=T\mid S=T)=\frac{3}{4}=0.75.
+\]
+
+When \(S=F\), IDs \(6,9\) have \(C=T\), so
+\[
+    P(C=T\mid S=F)=\frac{2}{9}\approx 0.2222.
+\]
+
+\subsubsection*{4. Alarm given burglar and cat}
+
+\[
+    P(A=T\mid B=T,C=T)=\frac{1}{1}=1.0
+\]
+because ID \(9\) is the only case.
+
+\[
+    P(A=T\mid B=T,C=F)=\frac{2}{3}\approx 0.6667
+\]
+from IDs \(7,8,13\), where alarm is true in \(8,13\).
+
+\[
+    P(A=T\mid B=F,C=T)=\frac{1}{4}=0.25
+\]
+from IDs \(6,10,11,12\), where alarm is true only in \(10\).
+
+\[
+    P(A=T\mid B=F,C=F)=\frac{1}{5}=0.2
+\]
+from IDs \(1,2,3,4,5\), where alarm is true only in \(5\).
+
+So the CPTs are:
+\[
+    \boxed{P(S=T)=0.3077}
+\]
+\[
+    \boxed{
+    P(B=T\mid S=T)=0.25,\quad
+    P(B=T\mid S=F)=0.3333
+    }
+\]
+\[
+    \boxed{
+    P(C=T\mid S=T)=0.75,\quad
+    P(C=T\mid S=F)=0.2222
+    }
+\]
+\[
+    \boxed{
+    \begin{aligned}
+    P(A=T\mid B=T,C=T)&=1.0,\\
+    P(A=T\mid B=T,C=F)&=0.6667,\\
+    P(A=T\mid B=F,C=T)&=0.25,\\
+    P(A=T\mid B=F,C=F)&=0.2.
+    \end{aligned}
+    }
+\]
+
+\subsection*{Part (c): Predict ALARM when \(B=T\), \(C=T\), \(S=F\)}
+
+Once \(B\) and \(C\) are known, \(A\) depends only on \(B\) and \(C\), not directly
+on \(S\).
+
+From the CPT:
+\[
+    P(A=T\mid B=T,C=T)=1.
+\]
+
+Therefore the Bayesian network predicts
+\[
+    \boxed{A=T.}
+\]
+
+\subsection*{Part (d): Generate one sample}
+
+Use the random numbers
+\[
+    0.94,\ 0.27,\ 0.30,\ 0.18.
+\]
+
+Following the same sampling convention as the sample solution, assign the
+``false'' interval first and the ``true'' interval second.
+
+\subsubsection*{1. Sample \(S\)}
+
+\[
+    P(S=T)=0.3077
+    \quad\Rightarrow\quad
+    P(S=F)=0.6923.
+\]
+
+Since
+\[
+    0.94 > 0.6923,
+\]
+we get
+\[
+    S=T.
+\]
+
+\subsubsection*{2. Sample \(B\mid S=T\)}
+
+\[
+    P(B=T\mid S=T)=0.25
+    \quad\Rightarrow\quad
+    P(B=F\mid S=T)=0.75.
+\]
+
+Since
+\[
+    0.27 < 0.75,
+\]
+we get
+\[
+    B=F.
+\]
+
+\subsubsection*{3. Sample \(C\mid S=T\)}
+
+\[
+    P(C=T\mid S=T)=0.75
+    \quad\Rightarrow\quad
+    P(C=F\mid S=T)=0.25.
+\]
+
+Since
+\[
+    0.30 > 0.25,
+\]
+we get
+\[
+    C=T.
+\]
+
+\subsubsection*{4. Sample \(A\mid B=F,C=T\)}
+
+\[
+    P(A=T\mid B=F,C=T)=0.25
+    \quad\Rightarrow\quad
+    P(A=F\mid B=F,C=T)=0.75.
+\]
+
+Since
+\[
+    0.18 < 0.75,
+\]
+we get
+\[
+    A=F.
+\]
+
+Therefore the generated sample is
+\[
+    \boxed{
+    S=T,\quad B=F,\quad C=T,\quad A=F.
+    }
+\]
+
+\section*{Final Answers Summary}
+
+\begin{itemize}
+    \item Q1:
+    \[
+        \hat y = 0.5648 + 0.2963x,\quad
+        \text{MSE}_{\text{train}}\approx 2.0,\quad
+        \text{MSE}_{\text{test}}\approx 0.206.
+    \]
+    \item Q2: use the provided softmax derivative chain to obtain
+    \[
+        \nabla_{\beta_k}J(\beta_k)
+        =
+        -\sum_{i=1}^{M}\sum_{k=1}^{K}
+        I_k(y^{(i)})
+        \left(1-\text{softmax}(z^{(i)})_k\right)x^{(i)}.
+    \]
+    \item Q3:
+    \[
+        \delta_1=0,\ \delta_2=-0.095,\ \delta_3=-0.2375,\ \delta_4=0,\ 
+        \delta_5=-0.095,\ \delta_6=-0.2375,\ \delta_7=-0.475
+    \]
+    and
+    \[
+        \frac{\partial L}{\partial w_{75}}=-1.30625,\qquad
+        \frac{\partial L}{\partial w_1}=-0.3325.
+    \]
+    \item Q4:
+    \[
+        G_0=65,\qquad G_1=70.
+    \]
+    \item Q5:
+    \[
+        v(0)\approx -0.156,\quad v(1)\approx 0.974
+    \]
+    and
+    \[
+        q(0,0)=-1,\ q(0,1)=1.11,\ q(1,0)\approx 0.974,\ q(1,1)=-1.1
+    \]
+    for the sample-solution Monte Carlo part, and
+    \[
+        q(0,0)=-0.564,\ q(0,1)=0.6,\ q(1,0)\approx 1.003,\ q(1,1)=-0.564
+    \]
+    for Q-learning.
+    \item Q6:
+    \[
+        P(S=T)=0.3077,\quad
+        P(B=T\mid S=T)=0.25,\quad
+        P(B=T\mid S=F)=0.3333,
+    \]
+    \[
+        P(C=T\mid S=T)=0.75,\quad
+        P(C=T\mid S=F)=0.2222,
+    \]
+    \[
+        P(A=T\mid T,T)=1,\quad
+        P(A=T\mid T,F)=0.6667,\quad
+        P(A=T\mid F,T)=0.25,\quad
+        P(A=T\mid F,F)=0.2,
+    \]
+    with prediction \(A=T\) for \(B=T,C=T,S=F\), and generated sample
+    \[
+        (S,B,C,A)=(T,F,T,F).
+    \]
+\end{itemize}
+
+\end{document}

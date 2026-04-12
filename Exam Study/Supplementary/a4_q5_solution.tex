@@ -1,0 +1,415 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 4, Question 5}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question Summary}
+
+We have a two-state, two-action reinforcement-learning problem:
+
+\begin{center}
+\begin{tabular}{ccccc}
+\toprule
+State & Action & Next state & Probability & Reward \\
+\midrule
+0 & 0 & 0 & 1 & -1 \\
+0 & 1 & 1 & 1 & 1 \\
+1 & 0 & 1 & 1 & 1 \\
+1 & 1 & 0 & 1 & -1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Assume:
+\[
+    \gamma=0.1,
+    \qquad
+    \pi(1\mid 0)=\pi(0\mid 1)=0.6.
+\]
+
+The question asks for:
+\begin{enumerate}[label=(\alph*)]
+    \item \(\varepsilon\) for the \(\varepsilon\)-greedy policy,
+    \item the state-value and action-value functions under the given policy,
+    \item the optimal policy and optimal values,
+    \item Monte Carlo estimates from two generated trajectories,
+    \item off-policy TD control (Q-learning),
+    \item on-policy TD control (SARSA).
+\end{enumerate}
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 6 slides, Value Function and Solving Bellman Equation:}
+    use Bellman equations for \(v_\pi(s)\) and \(q_\pi(s,a)\).
+    \item \textbf{Chapter 6 slides, \(\varepsilon\)-greedy policy:} the greedy
+    action gets probability \(1-\varepsilon+\varepsilon/|\mathcal{A}|\).
+    \item \textbf{Chapter 6 slides, Monte Carlo:} update values from returns
+    \(G_t\).
+    \item \textbf{Chapter 6 slides, Q-learning:}
+    \[
+        q(s,a)\leftarrow q(s,a)+\alpha\left[r+\gamma\max_{a'}q(s',a')-q(s,a)\right].
+    \]
+    \item \textbf{Chapter 6 slides, SARSA:}
+    \[
+        q(s,a)\leftarrow q(s,a)+\alpha\left[r+\gamma q(s',a')-q(s,a)\right].
+    \]
+\end{itemize}
+
+\section*{Part (a): Find \(\varepsilon\)}
+
+There are two actions, so an \(\varepsilon\)-greedy policy gives the greedy action
+probability
+\[
+    1-\varepsilon+\frac{\varepsilon}{2}=1-\frac{\varepsilon}{2}.
+\]
+The problem states
+\[
+    \pi(1\mid 0)=\pi(0\mid 1)=0.6,
+\]
+and these are the greedy-action probabilities in states \(0\) and \(1\),
+respectively. Therefore
+\[
+    1-\frac{\varepsilon}{2}=0.6
+    \quad\Rightarrow\quad
+    \frac{\varepsilon}{2}=0.4
+    \quad\Rightarrow\quad
+    \varepsilon=0.8.
+\]
+
+\[
+    \boxed{\varepsilon=0.8}
+\]
+
+\section*{Part (b): Find \(V_\pi\) and \(Q_\pi\)}
+
+Under the given policy:
+\[
+    \pi(0\mid 0)=0.4,\qquad \pi(1\mid 0)=0.6,
+\]
+\[
+    \pi(0\mid 1)=0.6,\qquad \pi(1\mid 1)=0.4.
+\]
+
+The Bellman equations are
+\[
+    V(0)=0.4[-1+0.1V(0)] + 0.6[1+0.1V(1)],
+\]
+\[
+    V(1)=0.6[1+0.1V(1)] + 0.4[-1+0.1V(0)].
+\]
+By symmetry, let
+\[
+    V(0)=V(1)=v.
+\]
+Then
+\[
+\begin{aligned}
+    v
+    &=0.4(-1+0.1v)+0.6(1+0.1v) \\
+    &=-0.4+0.04v+0.6+0.06v \\
+    &=0.2+0.1v.
+\end{aligned}
+\]
+So
+\[
+    0.9v=0.2
+    \quad\Rightarrow\quad
+    v=\frac{2}{9}\approx 0.2222.
+\]
+
+Therefore
+\[
+    \boxed{
+    V(0)=V(1)=\frac{2}{9}\approx 0.2222
+    }.
+\]
+
+Now compute the action values:
+\[
+    Q(0,0)=-1+0.1V(0)=-1+\frac{1}{45}=-\frac{44}{45}\approx -0.9778,
+\]
+\[
+    Q(0,1)=1+0.1V(1)=1+\frac{1}{45}=\frac{46}{45}\approx 1.0222,
+\]
+\[
+    Q(1,0)=1+0.1V(1)=\frac{46}{45}\approx 1.0222,
+\]
+\[
+    Q(1,1)=-1+0.1V(0)=-\frac{44}{45}\approx -0.9778.
+\]
+
+\[
+    \boxed{
+    \begin{aligned}
+    Q(0,0)&=-0.9778, & Q(0,1)&=1.0222,\\
+    Q(1,0)&=1.0222,  & Q(1,1)&=-0.9778.
+    \end{aligned}}
+\]
+
+\section*{Part (c): Find the Optimal Policy}
+
+The optimal Bellman equations are
+\[
+    V^*(0)=\max\{-1+0.1V^*(0),\;1+0.1V^*(1)\},
+\]
+\[
+    V^*(1)=\max\{1+0.1V^*(1),\;-1+0.1V^*(0)\}.
+\]
+Clearly the better action in state \(0\) is action \(1\), and the better action in
+state \(1\) is action \(0\). Thus
+\[
+    \boxed{\pi^*(0)=1,\qquad \pi^*(1)=0}.
+\]
+
+Under this policy,
+\[
+    V^*(1)=1+0.1V^*(1)
+    \quad\Rightarrow\quad
+    0.9V^*(1)=1
+    \quad\Rightarrow\quad
+    V^*(1)=\frac{10}{9}.
+\]
+Then
+\[
+    V^*(0)=1+0.1V^*(1)=1+\frac{1}{9}=\frac{10}{9}.
+\]
+
+\[
+    \boxed{
+    V^*(0)=V^*(1)=\frac{10}{9}\approx 1.1111
+    }.
+\]
+
+\section*{Part (d): Monte Carlo Estimates}
+
+Use the random numbers in order:
+\[
+0.94,\;0.27,\;0.30,\;0.18,\;0.75,\;0.35,\ldots
+\]
+
+Action-selection convention under the given \(\varepsilon\)-greedy policy:
+\begin{itemize}
+    \item in state \(0\), choose action \(1\) if \(r\le 0.6\), else action \(0\),
+    \item in state \(1\), choose action \(0\) if \(r\le 0.6\), else action \(1\).
+\end{itemize}
+
+\subsection*{Trajectory starting from \(s_0=0\)}
+
+\[
+    0 \xrightarrow[a=0]{-1} 0 \xrightarrow[a=1]{1} 1 \xrightarrow[a=0]{1} 1.
+\]
+This uses random numbers \(0.94, 0.27, 0.30\).
+
+\subsection*{Trajectory starting from \(s_0=1\)}
+
+\[
+    1 \xrightarrow[a=0]{1} 1 \xrightarrow[a=1]{-1} 0 \xrightarrow[a=1]{1} 1.
+\]
+This uses random numbers \(0.18, 0.75, 0.35\).
+
+\subsection*{Returns}
+
+For the first trajectory:
+\[
+    G_0^{(1)}=-1+0.1(1)+0.1^2(1)=-0.89,
+\]
+\[
+    G_1^{(1)}=1+0.1(1)=1.1,
+\]
+\[
+    G_2^{(1)}=1.
+\]
+
+For the second trajectory:
+\[
+    G_0^{(2)}=1+0.1(-1)+0.1^2(1)=0.91,
+\]
+\[
+    G_1^{(2)}=-1+0.1(1)=-0.9,
+\]
+\[
+    G_2^{(2)}=1.
+\]
+
+\subsection*{State-value estimates}
+
+Using every-visit incremental Monte Carlo with \(\alpha=0.6\) and initial values
+equal to \(0\),
+\[
+    \boxed{
+    V(0)\approx 0.77856,\qquad V(1)\approx -0.22560
+    }.
+\]
+
+\subsection*{Action-value estimates}
+
+Again using every-visit incremental Monte Carlo with \(\alpha=0.6\):
+\[
+    \boxed{
+    Q(0,0)=-0.534,\quad
+    Q(0,1)=0.864,\quad
+    Q(1,0)=0.786,\quad
+    Q(1,1)=-0.540
+    }.
+\]
+
+\section*{Part (e): Off-Policy TD Control (Q-learning)}
+
+Use
+\[
+    Q(s,a)\leftarrow Q(s,a)+\alpha\left[r+\gamma\max_{a'}Q(s',a')-Q(s,a)\right],
+\]
+with \(\alpha=0.6\), starting from
+\[
+    Q(s,a)=0
+    \quad\text{for all }(s,a).
+\]
+For the final step of each trajectory, treat the endpoint at \(t=3\) as terminal, so
+the target is just the immediate reward.
+
+After processing the two trajectories from part (d), the final Q-values are:
+\[
+    \boxed{
+    Q(0,0)=-0.600,\quad
+    Q(0,1)=0.840,\quad
+    Q(1,0)=0.876,\quad
+    Q(1,1)=-0.564
+    }.
+\]
+
+\section*{Part (f): On-Policy TD Control (SARSA)}
+
+Use
+\[
+    Q(s,a)\leftarrow Q(s,a)+\alpha\left[r+\gamma Q(s',a')-Q(s,a)\right].
+\]
+Start with
+\[
+    Q(s,a)=0
+    \quad\text{for all }(s,a),
+\]
+and initial policy
+\[
+    \pi(1\mid 0)=\pi(0\mid 1)=0.5.
+\]
+
+Using the same random sequence from the beginning,
+\[
+0.94,\;0.27,\;0.30,\;0.18,\;0.75,\ldots
+\]
+the trajectory is
+\[
+    0 \xrightarrow[a=0]{-1} 0
+    \xrightarrow[a=1]{1} 1
+    \xrightarrow[a=0]{1} 1
+    \xrightarrow[a=0]{1} 1
+    \xrightarrow[a=1]{-1} 0.
+\]
+
+Applying SARSA step by step gives:
+\[
+    \boxed{
+    Q(0,0)=-0.600,\quad
+    Q(0,1)=0.600,\quad
+    Q(1,0)=0.840,\quad
+    Q(1,1)=-0.600
+    }.
+\]
+
+\section*{Final Answer}
+
+\[
+    \boxed{\varepsilon=0.8}
+\]
+
+\[
+    \boxed{
+    V(0)=V(1)=\frac{2}{9}\approx 0.2222
+    }
+\]
+
+\[
+    \boxed{
+    \begin{aligned}
+    Q(0,0)&=-0.9778, & Q(0,1)&=1.0222,\\
+    Q(1,0)&=1.0222,  & Q(1,1)&=-0.9778
+    \end{aligned}}
+\]
+
+\[
+    \boxed{\pi^*(0)=1,\qquad \pi^*(1)=0}
+\]
+
+\[
+    \boxed{
+    V^*(0)=V^*(1)=\frac{10}{9}\approx 1.1111
+    }
+\]
+
+\[
+    \boxed{
+    \text{MC: }
+    V(0)\approx 0.77856,\;
+    V(1)\approx -0.22560
+    }
+\]
+
+\[
+    \boxed{
+    \text{MC }Q:
+    Q(0,0)=-0.534,\;
+    Q(0,1)=0.864,\;
+    Q(1,0)=0.786,\;
+    Q(1,1)=-0.540
+    }
+\]
+
+\[
+    \boxed{
+    \text{Q-learning: }
+    Q(0,0)=-0.600,\;
+    Q(0,1)=0.840,\;
+    Q(1,0)=0.876,\;
+    Q(1,1)=-0.564
+    }
+\]
+
+\[
+    \boxed{
+    \text{SARSA: }
+    Q(0,0)=-0.600,\;
+    Q(0,1)=0.600,\;
+    Q(1,0)=0.840,\;
+    Q(1,1)=-0.600
+    }
+\]
+
+\section*{Exam Notes}
+
+\begin{itemize}
+    \item In this problem, the transitions are deterministic. The only randomness
+    is from the behavior policy.
+    \item For \(\varepsilon\)-greedy with two actions, the greedy action gets
+    probability \(1-\varepsilon/2\), not \(1-\varepsilon\).
+    \item Q-learning uses the greedy target
+    \(\max_{a'}Q(s',a')\), while SARSA uses the actually selected next action
+    \(a'\).
+    \item Be explicit about how the random numbers are mapped to actions. That is
+    where most bookkeeping mistakes happen.
+\end{itemize}
+
+\end{document}
