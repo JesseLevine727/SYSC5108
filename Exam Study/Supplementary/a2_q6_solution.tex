@@ -1,0 +1,290 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 2, Question 6}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+Consider training a logistic regression model using a loss close to least squared
+error (LSE). Assume \(K=2\), and define the differentiable loss through errors in
+probabilities:
+\[
+    J(\beta)
+    =
+    \sum_{i=1}^{M}
+    \left[
+        I_1(y^{(i)})\left(1-p_1(z^{(i)})\right)^2
+        +
+        I_2(y^{(i)})\left(p_1(z^{(i)})\right)^2
+    \right],
+\]
+where
+\[
+    z^{(i)} = \beta^T x^{(i)}, \qquad x_0=1.
+\]
+Find the gradient of the loss function and compare it with the MLE gradient
+discussed in class.
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 3 slides, Logistic Regression Model:} for \(K=2\),
+    logistic regression models the class probability using
+    \(p_1(x)=\sigma(z)\), where \(z=\beta^T x\).
+    \item \textbf{Chapter 3 slides, Alternative Notation:} for \(y\in\{0,1\}\),
+    the negative log-likelihood loss has gradient
+    \[
+        \nabla_\beta J_{\text{MLE}}(\beta)
+        =
+        -\sum_i \left(y^{(i)}-\sigma(z^{(i)})\right)x^{(i)}.
+    \]
+    \item \textbf{Chapter 3 slides, Measuring Loss:} using negative
+    log-likelihood is equivalent to cross-entropy for the model distribution.
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    Chapters 5 and 6:} logistic regression uses a sigmoid to map a linear score
+    into \((0,1)\), and maximum likelihood becomes minimization of negative
+    log-likelihood, equivalently cross-entropy. The textbook also notes that
+    mean squared error with sigmoid outputs can suffer from saturation and slow
+    learning.
+\end{itemize}
+
+\section*{Step-by-Step Solution}
+
+\subsection*{1. Simplify the notation}
+
+For one sample \(i\), define
+\[
+    p_i = p_1(z^{(i)}) = \sigma(z^{(i)}),
+    \qquad
+    z^{(i)} = \beta^T x^{(i)}.
+\]
+Also define the binary target
+\[
+    t_i = I_1(y^{(i)}).
+\]
+Since there are only two classes,
+\[
+    I_2(y^{(i)}) = 1 - I_1(y^{(i)}) = 1-t_i.
+\]
+Therefore, the sample loss can be rewritten as
+\[
+    J_i(\beta)
+    =
+    t_i(1-p_i)^2 + (1-t_i)p_i^2.
+\]
+This is exactly squared error on the predicted probability:
+\[
+    J_i(\beta) = (t_i-p_i)^2.
+\]
+Check:
+\[
+    \begin{cases}
+    t_i=1: & J_i = (1-p_i)^2, \\
+    t_i=0: & J_i = p_i^2.
+    \end{cases}
+\]
+
+\subsection*{2. Differentiate the loss with respect to \(p_i\)}
+
+\[
+    J_i = (t_i-p_i)^2.
+\]
+Thus
+\[
+    \frac{\partial J_i}{\partial p_i}
+    =
+    2(p_i-t_i).
+\]
+Equivalently, using the original indicator notation:
+\[
+\begin{aligned}
+    \frac{\partial J_i}{\partial p_i}
+    &=
+    -2I_1(y^{(i)})(1-p_i)+2I_2(y^{(i)})p_i.
+\end{aligned}
+\]
+
+\subsection*{3. Differentiate the sigmoid with respect to \(\beta\)}
+
+The sigmoid derivative is
+\[
+    \frac{d\sigma(z)}{dz}
+    =
+    \sigma(z)(1-\sigma(z)).
+\]
+Since \(z^{(i)}=\beta^T x^{(i)}\),
+\[
+    \nabla_\beta z^{(i)} = x^{(i)}.
+\]
+Therefore,
+\[
+    \nabla_\beta p_i
+    =
+    \frac{dp_i}{dz^{(i)}}\nabla_\beta z^{(i)}
+    =
+    p_i(1-p_i)x^{(i)}.
+\]
+
+\subsection*{4. Apply the chain rule}
+
+For one sample,
+\[
+\begin{aligned}
+    \nabla_\beta J_i(\beta)
+    &=
+    \frac{\partial J_i}{\partial p_i}\nabla_\beta p_i \\
+    &=
+    2(p_i-t_i)p_i(1-p_i)x^{(i)}.
+\end{aligned}
+\]
+Summing over all \(M\) samples gives
+\[
+    \boxed{
+    \nabla_\beta J(\beta)
+    =
+    2\sum_{i=1}^{M}
+    \left(p_i-t_i\right)p_i(1-p_i)x^{(i)}
+    }.
+\]
+
+Using \(t_i=I_1(y^{(i)})\) and \(p_i=p_1(z^{(i)})\), this is
+\[
+    \boxed{
+    \nabla_\beta J(\beta)
+    =
+    2\sum_{i=1}^{M}
+    \left(p_1(z^{(i)})-I_1(y^{(i)})\right)
+    p_1(z^{(i)})\left(1-p_1(z^{(i)})\right)x^{(i)}
+    }.
+\]
+
+In the assignment's original indicator notation:
+\[
+    \boxed{
+    \nabla_\beta J(\beta)
+    =
+    2\sum_{i=1}^{M}
+    \left[
+        -I_1(y^{(i)})(1-p_i)
+        +
+        I_2(y^{(i)})p_i
+    \right]
+    p_i(1-p_i)x^{(i)}
+    }.
+\]
+
+\section*{Comparison With MLE}
+
+For binary logistic regression, the MLE or negative-log-likelihood loss is
+\[
+    J_{\text{MLE}}(\beta)
+    =
+    -\sum_{i=1}^{M}
+    \left[
+        t_i\log(p_i)
+        +
+        (1-t_i)\log(1-p_i)
+    \right].
+\]
+Its gradient is
+\[
+    \boxed{
+    \nabla_\beta J_{\text{MLE}}(\beta)
+    =
+    \sum_{i=1}^{M}(p_i-t_i)x^{(i)}
+    =
+    -\sum_{i=1}^{M}(t_i-p_i)x^{(i)}
+    }.
+\]
+
+Now compare the two gradients:
+\[
+    \nabla_\beta J_{\text{LSE-prob}}(\beta)
+    =
+    2\sum_i (p_i-t_i)\underbrace{p_i(1-p_i)}_{\text{extra sigmoid derivative}}x^{(i)}
+\]
+while
+\[
+    \nabla_\beta J_{\text{MLE}}(\beta)
+    =
+    \sum_i (p_i-t_i)x^{(i)}.
+\]
+
+\section*{Interpretation}
+
+\begin{itemize}
+    \item The LSE-on-probabilities gradient has an extra factor
+    \(p_i(1-p_i)\), and \(p_i(1-p_i)\le 0.25\).
+    \item When the sigmoid saturates, \(p_i\approx 0\) or \(p_i\approx 1\), this
+    extra factor becomes very small.
+    \item This is a serious problem when the model is \emph{confident but wrong}.
+    For example, if \(t_i=1\) but \(p_i\approx 0\), then
+    \[
+        \nabla_\beta J_{\text{MLE},i}\approx -x^{(i)},
+    \]
+    which gives a strong corrective update, but
+    \[
+        \nabla_\beta J_{\text{LSE-prob},i}
+        \approx
+        -2p_i(1-p_i)x^{(i)}
+        \approx 0,
+    \]
+    which can make learning very slow.
+    \item This is why MLE/cross-entropy is preferred for logistic regression and
+    sigmoid output units: the log-likelihood cancels the sigmoid derivative in a
+    way that avoids this extra saturation factor.
+\end{itemize}
+
+\section*{Final Answer}
+
+\[
+    \boxed{
+    \nabla_\beta J(\beta)
+    =
+    2\sum_{i=1}^{M}
+    \left(p_1(z^{(i)})-I_1(y^{(i)})\right)
+    p_1(z^{(i)})\left(1-p_1(z^{(i)})\right)x^{(i)}
+    }
+\]
+
+Compared with MLE,
+\[
+    \boxed{
+    \nabla_\beta J_{\text{MLE}}(\beta)
+    =
+    \sum_{i=1}^{M}
+    \left(p_1(z^{(i)})-I_1(y^{(i)})\right)x^{(i)}
+    }.
+\]
+The LSE-style probability loss therefore has the same prediction-error term
+\((p_i-t_i)\), but it also has the extra sigmoid-derivative factor
+\(p_i(1-p_i)\), which can cause vanishing gradients for saturated sigmoid outputs.
+
+\section*{Exam Note}
+
+If the loss is written with a leading factor \(\tfrac12\), then the factor \(2\)
+in the LSE gradient disappears:
+\[
+    \frac{1}{2}(t_i-p_i)^2
+    \quad\Rightarrow\quad
+    \nabla_\beta J_i
+    =
+    (p_i-t_i)p_i(1-p_i)x^{(i)}.
+\]
+The key comparison with MLE does not change: the LSE probability loss still has
+the extra \(p_i(1-p_i)\) factor.
+
+\end{document}

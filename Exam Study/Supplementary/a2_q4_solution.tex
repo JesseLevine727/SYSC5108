@@ -1,0 +1,263 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlist[itemize]{leftmargin=1.4em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+\title{SYSC 5108 Exam Study\\Assignment 2, Question 4}
+\author{Jesse Levine}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Question}
+
+For the multivariate logistic regression model from Assignment 2, Question 4,
+continuous input features are normalized to the range \([-1,1]\), missing
+continuous values are imputed with the mean, and missing categorical values are
+imputed with the mode. Use the trained model to predict whether each query
+instance will make a repeat purchase.
+
+\section*{Course and Textbook Cross-References}
+
+\begin{itemize}
+    \item \textbf{Chapter 3 slides, Logistic Regression Model:} for \(K=2\)
+    classes, the model uses a linear score \(z=\mathbf{w}^{T}\mathbf{x}\) and
+    converts it to a probability with the logistic sigmoid.
+    \item \textbf{Chapter 3 slides, Logistic Sigmoid Function:}
+    \[
+        \sigma(z)=\frac{1}{1+\exp(-z)}.
+    \]
+    \item \textbf{Chapter 3 slides, Prediction:} the predicted class is selected
+    by comparing class probabilities. With two classes, this is equivalent to
+    predicting repeat purchase when \(\sigma(z)\ge 0.5\).
+    \item \textbf{Goodfellow, Bengio, and Courville, \emph{Deep Learning},
+    Chapter 5:} logistic regression maps a linear function through a sigmoid and
+    interprets \(p(y=1\mid x;\theta)=\sigma(\theta^T x)\) as the probability of
+    class 1.
+\end{itemize}
+
+\section*{Given Information}
+
+\subsection*{Data Quality Report}
+
+The continuous-feature statistics needed for range normalization and imputation
+are:
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+Feature & Min & Mean & Max & 1st Qrt & Median & 3rd Qrt \\
+\midrule
+Age & 18.0 & 32.7 & 63.0 & 22.0 & 32.0 & 43.0 \\
+Shop frequency & 0.2 & 2.2 & 5.4 & 1.0 & 1.3 & 4.3 \\
+Shop value & 5.0 & 101.9 & 230.7 & 11.8 & 100.14 & 174.6 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The categorical mode for socioeconomic band is
+\[
+    \operatorname{mode}(\text{socioeconomic band}) = a.
+\]
+
+\subsection*{Model Weights}
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+Feature & Weight \\
+\midrule
+Intercept \(w_0\) & 0.6679 \\
+Age & -0.5795 \\
+Socioeconomic band B & -0.1981 \\
+Socioeconomic band C & -0.2318 \\
+Shop value & 3.4091 \\
+Shop frequency & 2.0499 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Query Instances}
+
+\begin{center}
+\begin{tabular}{rrrrr}
+\toprule
+ID & Age & Band & Shop frequency & Shop value \\
+\midrule
+1 & 38 & a & 1.90 & 165.39 \\
+2 & 56 & b & 1.60 & 109.32 \\
+3 & 18 & c & 6.00 & 10.09 \\
+4 & ? & b & 1.33 & 204.62 \\
+5 & 62 & ? & 0.85 & 110.50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Step-by-Step Solution}
+
+\subsection*{1. Impute missing values}
+
+Missing continuous values are imputed with the mean, so ID 4 has
+\[
+    \text{Age}_{4}=32.7.
+\]
+Missing categorical values are imputed with the mode, so ID 5 has
+\[
+    \text{Band}_{5}=a.
+\]
+
+\subsection*{2. Encode the categorical feature}
+
+The model uses one-hot coding for bands \(b\) and \(c\). Band \(a\) is the baseline:
+\[
+    a \rightarrow (B,C)=(0,0),\qquad
+    b \rightarrow (B,C)=(1,0),\qquad
+    c \rightarrow (B,C)=(0,1).
+\]
+
+\subsection*{3. Normalize continuous features}
+
+Range normalization to \([-1,1]\) is
+\[
+    x_{\text{norm}}
+    =
+    2\frac{x-x_{\min}}{x_{\max}-x_{\min}}-1.
+\]
+
+For example, for ID 1 age:
+\[
+    \text{Age}_{1,\text{norm}}
+    =
+    2\frac{38-18}{63-18}-1
+    =
+    -0.1111.
+\]
+
+\textbf{Assumption for ID 3:} the query value \(\text{Shop frequency}=6.00\)
+is above the training-set max \(5.4\). Since the question says features are
+normalized to \([-1,1]\), this solution clips ID 3's shop frequency to the
+training max \(5.4\) before normalization. Without clipping, ID 3's normalized
+frequency would be \(1.2308\) and its prediction changes; see the exam note at
+the end.
+
+\begin{center}
+\begin{tabular}{rrrrrr}
+\toprule
+ID & Age norm & Freq. norm & Value norm & \(B\) & \(C\) \\
+\midrule
+1 & -0.1111 & -0.3462 & 0.4213 & 0 & 0 \\
+2 & 0.6889 & -0.4615 & -0.0756 & 1 & 0 \\
+3 & -1.0000 & 1.0000 & -0.9549 & 0 & 1 \\
+4 & -0.3467 & -0.5654 & 0.7689 & 1 & 0 \\
+5 & 0.9556 & -0.7500 & -0.0651 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{4. Compute the logistic-regression score}
+
+Use
+\[
+\begin{aligned}
+z
+&=
+w_0
++w_{\text{age}}x_{\text{age}}
++w_B x_B
++w_C x_C
++w_{\text{value}}x_{\text{value}}
++w_{\text{freq}}x_{\text{freq}}.
+\end{aligned}
+\]
+
+For ID 1:
+\[
+\begin{aligned}
+z_1
+&=
+0.6679
+ +(-0.5795)(-0.1111)
+ +(-0.1981)(0)
+ +(-0.2318)(0) \\
+&\quad
+ +(3.4091)(0.4213)
+ +(2.0499)(-0.3462) \\
+&=1.4589.
+\end{aligned}
+\]
+
+\subsection*{5. Convert the score to a probability}
+
+Use the sigmoid:
+\[
+    p(\text{repeat purchase}\mid x)=\sigma(z)=\frac{1}{1+\exp(-z)}.
+\]
+
+Predict repeat purchase if \(p\ge 0.5\).
+
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+ID & \(z\) & \(\sigma(z)\) & Predicted class \\
+\midrule
+1 & 1.4589 & 0.8114 & Repeat purchase \\
+2 & -1.1332 & 0.2436 & No repeat purchase \\
+3 & -0.1898 & 0.4527 & No repeat purchase \\
+4 & 2.1330 & 0.8941 & Repeat purchase \\
+5 & -1.6453 & 0.1617 & No repeat purchase \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Final Answer}
+
+Using mean/mode imputation, one-hot encoding, range normalization, and the
+clipped ID 3 shop-frequency value, the model predicts:
+\[
+\boxed{
+\begin{array}{c|c|c}
+\text{ID} & p(\text{repeat purchase}) & \text{Decision} \\
+\hline
+1 & 0.8114 & \text{repeat purchase} \\
+2 & 0.2436 & \text{no repeat purchase} \\
+3 & 0.4527 & \text{no repeat purchase} \\
+4 & 0.8941 & \text{repeat purchase} \\
+5 & 0.1617 & \text{no repeat purchase}
+\end{array}}
+\]
+
+\section*{Exam Notes}
+
+\begin{itemize}
+    \item The most common mistakes in this question are forgetting to impute
+    missing values before normalization, encoding band \(a\) incorrectly, or
+    applying the sigmoid before adding the intercept.
+    \item The score \(z\) is linear, but the final probability is nonlinear because
+    of the sigmoid.
+    \item If the instructor expects \emph{unclipped} range normalization for the
+    out-of-range ID 3 frequency value \(6.00\), then
+    \[
+        x_{\text{freq},3}
+        =
+        2\frac{6.00-0.2}{5.4-0.2}-1
+        =
+        1.2308,
+    \]
+    which gives
+    \[
+        z_3=0.2832,\qquad \sigma(z_3)=0.5703.
+    \]
+    Under that convention, ID 3 would be predicted as repeat purchase. The
+    clipped convention matches the assignment solution assumption that normalized
+    features should remain inside \([-1,1]\).
+\end{itemize}
+
+\end{document}

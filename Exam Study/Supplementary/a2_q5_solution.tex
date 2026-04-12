@@ -1,0 +1,292 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 2, Question 5}\\
+\vspace{0.3em}
+{\large Logistic regression gradient for $0/1$ and $-1/+1$ label encodings}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 2.pdf}, Question 5
+\end{center}
+
+\section*{Question}
+
+Consider training a logistic regression model with $K=2$ classes. First assume $y\in\{0,1\}$ and
+\[
+J(w)=-y\log(\sigma(z))-(1-y)\log(1-\sigma(z)),
+\qquad
+z=w^T x,\qquad x_0=1.
+\]
+Show that
+\[
+\nabla_w J(w)=-x\bigl(y-\sigma(z)\bigr).
+\]
+Then change the encoding to $y\in\{-1,1\}$, show the result again, and explain the impact.
+
+\section*{Step 1: Recall the sigmoid derivative}
+
+Chapter 3 slides 32--34 define the logistic sigmoid:
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}.
+\]
+The derivative that we need is
+\[
+\frac{d\sigma(z)}{dz}=\sigma(z)(1-\sigma(z)).
+\]
+Also, since
+\[
+z=w^T x,
+\]
+the gradient of $z$ with respect to $w$ is
+\[
+\nabla_w z=x.
+\]
+
+\section*{Part (a): Derivation for $y\in\{0,1\}$}
+
+Let
+\[
+s=\sigma(z).
+\]
+The loss is
+\[
+J(w)=-y\log(s)-(1-y)\log(1-s).
+\]
+First differentiate with respect to $s$:
+\[
+\frac{dJ}{ds}
+=-\frac{y}{s}+\frac{1-y}{1-s}.
+\]
+Now use
+\[
+\frac{ds}{dz}=s(1-s).
+\]
+By the chain rule,
+\[
+\frac{dJ}{dz}
+=
+\frac{dJ}{ds}\frac{ds}{dz}
+=
+\left(-\frac{y}{s}+\frac{1-y}{1-s}\right)s(1-s).
+\]
+Simplify:
+\[
+\frac{dJ}{dz}
+=
+-y(1-s)+(1-y)s.
+\]
+Expand the terms:
+\[
+\frac{dJ}{dz}
+=-y+ys+s-ys=s-y.
+\]
+Since $s=\sigma(z)$,
+\[
+\frac{dJ}{dz}=\sigma(z)-y.
+\]
+Finally apply the chain rule through $z=w^T x$:
+\[
+\nabla_w J(w)
+=
+\frac{dJ}{dz}\nabla_w z
+=
+(\sigma(z)-y)x.
+\]
+This is the same as
+\[
+\boxed{
+\nabla_w J(w)
+=
+-x\bigl(y-\sigma(z)\bigr)
+}.
+\]
+
+\section*{Step 2: Interpret the $0/1$ Gradient}
+
+For $y=1$:
+\[
+\nabla_w J(w)=-(1-\sigma(z))x.
+\]
+Gradient descent uses
+\[
+w_{\text{new}}=w-\epsilon\nabla_wJ(w),
+\]
+so the update adds a positive multiple of $x$ when the positive class is underpredicted.
+
+For $y=0$:
+\[
+\nabla_w J(w)=\sigma(z)x.
+\]
+Gradient descent subtracts a positive multiple of $x$, pushing the logit $z=w^Tx$ downward.
+
+This matches the intuition: if the target is $1$, push the probability upward; if the target is $0$, push the probability downward.
+
+\section*{Part (b): Change the Encoding to $y\in\{-1,1\}$}
+
+When labels are encoded as $-1$ and $+1$, do not plug $y=-1$ directly into the $0/1$ cross-entropy formula. That formula assumes $y$ is an indicator variable. Instead, use the equivalent binary logistic loss written in margin form:
+\[
+J(w)=\log(1+e^{-yz}),
+\qquad
+y\in\{-1,1\}.
+\]
+Here,
+\[
+yz
+\]
+is the signed margin. If $yz$ is large and positive, the example is classified correctly with high confidence. If $yz$ is negative, the example is on the wrong side of the decision boundary.
+
+Differentiate with respect to $z$:
+\[
+\frac{dJ}{dz}
+=
+\frac{1}{1+e^{-yz}}\cdot e^{-yz}(-y).
+\]
+So
+\[
+\frac{dJ}{dz}
+=
+-\frac{y e^{-yz}}{1+e^{-yz}}.
+\]
+Divide numerator and denominator by $e^{-yz}$:
+\[
+\frac{dJ}{dz}
+=
+-\frac{y}{1+e^{yz}}.
+\]
+Using
+\[
+\sigma(-yz)=\frac{1}{1+e^{yz}},
+\]
+we get
+\[
+\frac{dJ}{dz}=-y\sigma(-yz).
+\]
+Now use $\nabla_wz=x$:
+\[
+\boxed{
+\nabla_w J(w)
+=
+-y\,x\,\sigma(-yz)
+}.
+\]
+Equivalently,
+\[
+\boxed{
+\nabla_w J(w)
+=
+-\frac{yx}{1+e^{yz}}
+}.
+\]
+
+\section*{Step 3: Show Consistency with the $0/1$ Formula}
+
+Let the old label be $t\in\{0,1\}$ and the new label be
+\[
+y=2t-1.
+\]
+If $t=1$, then $y=1$. The $-1/+1$ gradient becomes
+\[
+-y x\sigma(-yz)=-x\sigma(-z).
+\]
+Since
+\[
+\sigma(-z)=1-\sigma(z),
+\]
+this is
+\[
+-x(1-\sigma(z)),
+\]
+which matches the $0/1$ result for $t=1$:
+\[
+x(\sigma(z)-1).
+\]
+
+If $t=0$, then $y=-1$. The $-1/+1$ gradient becomes
+\[
+-(-1)x\sigma(z)=x\sigma(z),
+\]
+which matches the $0/1$ result for $t=0$:
+\[
+x(\sigma(z)-0)=x\sigma(z).
+\]
+
+So the two encodings describe the same binary logistic regression objective if the loss is written correctly for each encoding.
+
+\section*{Step 4: Explain the Impact of Changing the Encoding}
+
+Changing from $0/1$ labels to $-1/+1$ labels does not change the decision boundary. In both cases, the boundary is
+\[
+z=w^Tx=0.
+\]
+For the $0/1$ encoding,
+\[
+p(y=1\mid x)=\sigma(z),
+\]
+and the usual threshold is $p\ge 0.5$, which is equivalent to $z\ge 0$.
+
+For the $-1/+1$ encoding, the loss is written using the margin $yz$. This form is often cleaner because:
+\begin{itemize}
+\item Correct and confident examples have large positive $yz$ and therefore a small loss.
+\item Incorrect examples have negative $yz$ and therefore a large loss.
+\item The gradient magnitude is controlled by $\sigma(-yz)$, so examples that are badly misclassified receive a larger update.
+\end{itemize}
+
+The main caution is that the old $0/1$ cross-entropy formula cannot be reused unchanged with $y=-1$. You must rewrite it as
+\[
+J(w)=\log(1+e^{-yz}).
+\]
+
+\section*{Concise Exam Answer}
+
+For $y\in\{0,1\}$, let $s=\sigma(z)$. Then
+\[
+J(w)=-y\log(s)-(1-y)\log(1-s).
+\]
+The chain rule gives
+\[
+\frac{dJ}{dz}
+=
+\left(-\frac{y}{s}+\frac{1-y}{1-s}\right)s(1-s)
+=s-y
+=\sigma(z)-y.
+\]
+Since $\nabla_w z=x$,
+\[
+\nabla_w J(w)=(\sigma(z)-y)x=-x(y-\sigma(z)).
+\]
+For $y\in\{-1,1\}$, use
+\[
+J(w)=\log(1+e^{-yz}).
+\]
+Then
+\[
+\frac{dJ}{dz}=-\frac{y}{1+e^{yz}}=-y\sigma(-yz),
+\]
+so
+\[
+\nabla_wJ(w)=-yx\sigma(-yz)=-\frac{yx}{1+e^{yz}}.
+\]
+The impact is mostly notational and algebraic: $-1/+1$ labels express the loss in terms of the signed margin $yz$, while the $0/1$ form expresses it as Bernoulli cross-entropy. The decision boundary remains $w^Tx=0$ when the loss is written consistently.
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 2.pdf}, Question 5.
+\item Local submitted Assignment 2 PDF checked for comparison, Question 5 response.
+\item Slides: Chapter 3 slide deck, slides 32--34 on the logistic sigmoid and binary logistic regression.
+\item Slides: Chapter 3 slide deck, logistic regression training slide on log-likelihood and negative log-likelihood.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 3, Section 3.10 on the logistic sigmoid.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 6, Section 6.2.2.2 on sigmoid output units for Bernoulli output distributions and maximum likelihood.
+\end{itemize}
+
+\end{document}

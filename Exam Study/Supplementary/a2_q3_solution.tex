@@ -1,0 +1,208 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{array}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.7em}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{9.2in}
+
+\begin{document}
+
+\begin{center}
+{\Large SYSC 5108 Exam Study: Assignment 2, Question 3}\\
+\vspace{0.3em}
+{\large Logistic regression predictions with one-hot categorical inputs}\\
+\vspace{0.3em}
+Source question: \texttt{SYSC 5108 W26 Assignment 2.pdf}, Question 3
+\end{center}
+
+\section*{Question Summary}
+
+We are given a trained multivariate logistic regression model that predicts whether a shopper will perform a repeat purchase after receiving a free gift. The input features are:
+\[
+\text{age},\quad \text{socioeconomic band},\quad \text{shop value},\quad \text{shop frequency}.
+\]
+The socioeconomic band has three possible values: $a$, $b$, and $c$. The assignment says to use one-hot coding for $b$ and $c$, with $a$ as the baseline. Therefore:
+\[
+a \rightarrow (B=0,C=0),\qquad
+b \rightarrow (B=1,C=0),\qquad
+c \rightarrow (B=0,C=1).
+\]
+
+The model weights are:
+\[
+\begin{array}{c|r}
+\text{Feature} & \text{Weight}\\
+\hline
+\text{Intercept} & -3.82398\\
+\text{Age} & -0.02990\\
+\text{Band B} & -0.09089\\
+\text{Band C} & -0.19558\\
+\text{Shop value} & 0.02999\\
+\text{Shop frequency} & 0.74572
+\end{array}
+\]
+
+The query instances are:
+\[
+\begin{array}{c|r|c|r|r}
+\text{ID} & \text{Age} & \text{Band} & \text{Shop frequency} & \text{Shop value}\\
+\hline
+1 & 56 & b & 1.60 & 109.32\\
+2 & 21 & c & 4.92 & 11.28\\
+3 & 48 & b & 1.21 & 161.19\\
+4 & 37 & c & 0.72 & 170.65\\
+5 & 32 & a & 1.08 & 165.39
+\end{array}
+\]
+
+\section*{Step 1: Write the Logistic Regression Model}
+
+Chapter 3 slides 32--34 define the logistic sigmoid and logistic regression prediction:
+\[
+\sigma(z)=\frac{1}{1+e^{-z}},
+\qquad
+p(Y=1\mid x)=\sigma(z).
+\]
+Goodfellow, Bengio, and Courville also describe logistic regression as using the logistic sigmoid to squash a linear function into the interval $(0,1)$ so it can be interpreted as a probability.
+
+For this assignment, the linear score is:
+\[
+\begin{aligned}
+z
+=&\ w_0+w_{\text{age}}(\text{Age})
++w_B B+w_C C\\
+&+w_{\text{value}}(\text{Shop value})
++w_{\text{freq}}(\text{Shop frequency}).
+\end{aligned}
+\]
+Substitute the weights:
+\[
+\begin{aligned}
+z
+=&\ -3.82398-0.02990(\text{Age})
+-0.09089B-0.19558C\\
+&+0.02999(\text{Shop value})
++0.74572(\text{Shop frequency}).
+\end{aligned}
+\]
+Then compute:
+\[
+p=\sigma(z)=\frac{1}{1+e^{-z}}.
+\]
+
+If a hard classification is needed, use the usual threshold:
+\[
+p\ge 0.5 \Rightarrow \text{predict repeat purchase},
+\qquad
+p<0.5 \Rightarrow \text{predict no repeat purchase}.
+\]
+
+\section*{Step 2: Worked Example for ID 1}
+
+For ID 1:
+\[
+\text{Age}=56,\quad \text{Band}=b,\quad \text{Shop frequency}=1.60,\quad \text{Shop value}=109.32.
+\]
+Since the band is $b$:
+\[
+B=1,\qquad C=0.
+\]
+Now compute:
+\[
+\begin{aligned}
+z_1
+=&\ -3.82398-0.02990(56)-0.09089(1)-0.19558(0)\\
+&+0.02999(109.32)+0.74572(1.60).
+\end{aligned}
+\]
+Term by term:
+\[
+\begin{aligned}
+-0.02990(56)&=-1.67440,\\
+-0.09089(1)&=-0.09089,\\
+0.02999(109.32)&=3.2785068,\\
+0.74572(1.60)&=1.193152.
+\end{aligned}
+\]
+Therefore
+\[
+z_1=-3.82398-1.67440-0.09089+3.2785068+1.193152=-1.1176112.
+\]
+Apply sigmoid:
+\[
+p_1=\sigma(-1.1176112)
+=\frac{1}{1+e^{1.1176112}}
+=0.2464547.
+\]
+Since $0.2465<0.5$, ID 1 is predicted not to repeat purchase.
+
+\section*{Step 3: Compute All Predictions}
+
+The same calculation is applied to each query instance:
+\[
+\begin{array}{c|c|c|r|r|r|r|c}
+\text{ID} & B & C & \text{Age} & \text{Freq} & \text{Value} & z & \sigma(z)\\
+\hline
+1 & 1 & 0 & 56 & 1.60 & 109.32 & -1.1176 & 0.2465\\
+2 & 0 & 1 & 21 & 4.92 & 11.28 & -0.6402 & 0.3452\\
+3 & 1 & 0 & 48 & 1.21 & 161.19 & 0.3863 & 0.5954\\
+4 & 0 & 1 & 37 & 0.72 & 170.65 & 0.5289 & 0.6292\\
+5 & 0 & 0 & 32 & 1.08 & 165.39 & 0.9846 & 0.7280
+\end{array}
+\]
+
+\section*{Step 4: Make the Gift Decision}
+
+Using threshold $0.5$:
+\[
+\begin{array}{c|r|c}
+\text{ID} & \sigma(z) & \text{Decision}\\
+\hline
+1 & 0.2465 & \text{Do not give gift}\\
+2 & 0.3452 & \text{Do not give gift}\\
+3 & 0.5954 & \text{Give gift}\\
+4 & 0.6292 & \text{Give gift}\\
+5 & 0.7280 & \text{Give gift}
+\end{array}
+\]
+
+The highest predicted propensity is ID 5, followed by ID 4 and ID 3. IDs 1 and 2 have probabilities below $0.5$ and would not receive the gift under this threshold rule.
+
+\section*{Step 5: Exam Interpretation}
+
+This question tests three things:
+\begin{itemize}
+\item Logistic regression uses a linear score $z=w^Tx$ followed by the sigmoid $\sigma(z)$ to produce a probability.
+\item One-hot encoding needs a baseline category. Here, category $a$ is represented by $B=0,C=0$, not by a separate third indicator.
+\item The sign and magnitude of each weight affect the log-odds. For example, age has a negative coefficient, while shop value and shop frequency have positive coefficients.
+\end{itemize}
+
+A concise exam answer could be:
+\begin{quote}
+Encode the socioeconomic band as $a=(0,0)$, $b=(1,0)$, and $c=(0,1)$. For each query, compute
+\[
+\begin{aligned}
+z={}&-3.82398-0.02990(\text{Age})-0.09089B-0.19558C\\
+&+0.02999(\text{Value})+0.74572(\text{Frequency}),
+\end{aligned}
+\]
+then compute $p=\sigma(z)=1/(1+e^{-z})$. The resulting probabilities for IDs 1 through 5 are $0.2465$, $0.3452$, $0.5954$, $0.6292$, and $0.7280$. With a $0.5$ threshold, give the free gift to IDs 3, 4, and 5, but not to IDs 1 and 2.
+\end{quote}
+
+\section*{Cross References Used}
+
+\begin{itemize}
+\item Assignment: \texttt{SYSC 5108 W26 Assignment 2.pdf}, Question 3.
+\item Local submitted Assignment 2 PDF checked for comparison, Question 3 response.
+\item Local spreadsheet/notebook checked: \texttt{A2\_Q3.ods} and \texttt{A2\_Q3.ipynb}.
+\item Slides: Chapter 3 slide deck, slides 32--34 on the logistic sigmoid, binary logistic regression, logit interpretation, and prediction.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 3, Section 3.10 on the logistic sigmoid.
+\item Textbook: Goodfellow, Bengio, and Courville, \textit{Deep Learning}, Chapter 5, logistic regression discussion around Equation 5.81.
+\end{itemize}
+
+\end{document}
